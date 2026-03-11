@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Cinema</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:     #C9A84C;
+      --gold-dim: #7a6128;
+      --cream:    #F5ECD7;
+      --bg:       #100C08;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 2rem 1rem 0.5rem;
+      position: relative;
+    }
+    header::after {
+      content: '';
+      display: block;
+      width: 60%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 1rem auto 0;
+    }
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,0.4);
+    }
+    .subtitle {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #9a8060;
+      margin-top: 0.35rem;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.2rem;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem 1rem 0;
+    }
+    .ctrl-group { display: flex; align-items: center; gap: 0.5rem; }
+    .ctrl-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+    select {
+      background: #1a1008;
+      border: 1px solid var(--gold-dim);
+      color: var(--cream);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:hover { border-color: var(--gold); }
+
+    button {
+      background: #1a1008;
+      border: 1px solid var(--gold-dim);
+      color: var(--cream);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+      letter-spacing: 0.05em;
+    }
+    button:hover { border-color: var(--gold); background: #251808; }
+    button.active { border-color: var(--gold); background: #2e1f06; color: var(--gold); }
+
+    /* ── Scrubber ── */
+    .scrub-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      justify-content: center;
+      padding: 0.7rem 1rem 0;
+      flex-wrap: wrap;
+    }
+    .scrub-label-text {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+    #scrub-label {
+      font-size: 0.65rem;
+      color: #9a8060;
+      min-width: 180px;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 260px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold) var(--pct, 100%), #2a1a08 var(--pct, 100%));
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid #100C08;
+      box-shadow: 0 0 6px rgba(201,168,76,0.5);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid #100C08;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.1rem;
+      justify-content: center;
+      padding: 0.6rem 1rem 0;
+      align-items: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.58rem;
+      letter-spacing: 0.09em;
+      color: #9a8060;
+    }
+    .legend-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .legend-sym  { font-size: 0.75rem; line-height: 1; width: 14px; text-align: center; flex-shrink: 0; }
+    .legend-sep  { width: 1px; height: 14px; background: #3a2810; margin: 0 0.2rem; }
+
+    /* ── Theatre ── */
+    #theatre-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 980px;
+      margin: 0.8rem auto 0;
+      padding: 0 1rem;
+    }
+    svg#theatre {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 20px 60px rgba(0,0,0,0.8));
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #140e06f0;
+      border: 1px solid var(--gold-dim);
+      border-radius: 3px;
+      padding: 0.7rem 1rem;
+      font-size: 0.68rem;
+      line-height: 1.7;
+      color: var(--cream);
+      max-width: 260px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 100;
+    }
+    #tooltip.visible { opacity: 1; }
+    #tooltip .tt-name {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 0.85rem;
+      color: var(--gold);
+      margin-bottom: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #tooltip .tt-ann { font-style: normal; font-size: 1rem; }
+    #tooltip .tt-genre {
+      font-size: 0.58rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    #tooltip .tt-row { display: flex; justify-content: space-between; gap: 1rem; }
+    #tooltip .tt-val { color: var(--gold); }
+
+    /* ── Tour card ── */
+    #tour-card {
+      position: fixed;
+      bottom: 6rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #140e06f4;
+      border: 1px solid var(--gold);
+      border-radius: 4px;
+      padding: 1rem 1.4rem;
+      font-size: 0.72rem;
+      line-height: 1.7;
+      color: var(--cream);
+      max-width: 400px;
+      width: 90%;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      text-align: center;
+    }
+    #tour-card.visible { opacity: 1; pointer-events: all; }
+    #tour-card .tc-step { font-size: 0.55rem; letter-spacing: 0.2em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 0.3rem; }
+    #tour-card .tc-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1rem; color: var(--gold); margin-bottom: 0.4rem; }
+    #tour-card .tc-msg { color: #c8b080; margin-bottom: 0.8rem; font-size: 0.68rem; }
+    #tour-card .tc-nav { display: flex; gap: 0.6rem; justify-content: center; }
+    #tour-card .tc-nav button { font-size: 0.68rem; padding: 0.3rem 0.9rem; }
+
+    /* ── Stats ── */
+    #stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 2rem;
+      justify-content: center;
+      padding: 0.8rem 1rem 1.5rem;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: #6a5535;
+    }
+    #stats span { color: var(--gold); }
+
+    /* ── Screen wash transition ── */
+    .screen-wash {
+      transition: fill 0.6s ease;
+    }
+
+    /* ── Seat fade-in ── */
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    .theatregoer { animation: fadeIn 0.4s ease both; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title">M Y &nbsp; C I N E M A</div>
+    <div class="subtitle">movies i watched &nbsp;·&nbsp; each seat, an experience</div>
+  </header>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Color by</span>
+      <select id="colorMode">
+        <option value="genre">Main Genre</option>
+        <option value="myRating">My Rating</option>
+        <option value="avgRating">Avg Rating</option>
+        <option value="contentRating">Content Rating</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Size by</span>
+      <select id="sizeMode">
+        <option value="myRating">My Rating</option>
+        <option value="avgRating">Avg Rating</option>
+        <option value="year">Older = Bigger</option>
+        <option value="uniform">Uniform</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Filter</span>
+      <select id="filterMode">
+        <option value="all">All Genres</option>
+        <option value="Drama">Drama</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Fantasy">Fantasy</option>
+        <option value="Romance">Romance</option>
+        <option value="Thriller">Thriller</option>
+        <option value="Science Fiction">Sci-Fi</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <button id="tour-btn">▶ Auto Tour</button>
+    </div>
+  </div>
+
+  <!-- Timeline scrubber -->
+  <div class="scrub-wrap">
+    <span class="scrub-label-text">Timeline</span>
+    <input type="range" id="scrubber" min="0" max="55" value="55"
+      oninput="this.style.setProperty('--pct', (this.value/this.max*100)+'%')">
+    <span id="scrub-label">All films</span>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <div id="theatre-wrap"><svg id="theatre"></svg></div>
+
+  <div id="stats">
+    FILMS <span id="s-count">—</span> &nbsp;|&nbsp;
+    MY AVG <span id="s-myrating">—</span> / 5 &nbsp;|&nbsp;
+    CROWD AVG <span id="s-avgrating">—</span> / 5 &nbsp;|&nbsp;
+    TOP GENRE <span id="s-genre">—</span>
+  </div>
+
+  <div id="tooltip"></div>
+  <div id="tour-card"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
