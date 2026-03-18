@@ -106,8 +106,8 @@ const TOUR_STOPS = [
   { idx:24, msg:"Marty Supreme closed out 2025 on a high note for me." },
   { idx:32, msg:"Hamnet was my highest-rated drama of January. Congratulations Jessie Buckley on the Oscar!" },
   { idx:35, msg:"Django Unchained — 5 stars. January was a great month." },
-  { idx:37, msg:"War of the Worlds: my lowest rating of the collection, just 0.5 stars." },
-  { idx:46, msg:"Cats. I gave it 0.5 stars. No further comment." },
+  { idx:37, msg:"War of the Worlds - probably the worst movie of the year." },
+  { idx:46, msg:"Cats (2019). No further comment." },
   { idx:52, msg:"The French Dispatch — 4.5 stars. A strong way to round out my season." },
   { idx:56, msg:"I Origins is my most recent entry...and I wish it was better!" },
 ];
