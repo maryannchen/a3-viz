@@ -33,22 +33,24 @@ const ROW_DEFS = [
   { seats:9,  yFrac:0.59 },
   { seats:10, yFrac:0.68 },
   { seats:10, yFrac:0.78 },
-  { seats:8,  yFrac:0.88 },
+  { seats:9,  yFrac:0.88 },
 ];
 
 // Auto-tour stops: indices into DATA (sorted by date) with commentary
 const TOUR_STOPS = [
-  { idx:0,  msg:"Your first film of the season — Loving Vincent, a hand-painted masterpiece." },
-  { idx:3,  msg:"An early standout: Chainsaw Man earned a rare 5 stars." },
-  { idx:6,  msg:"Sinners — another perfect score. A great start to November." },
-  { idx:16, msg:"The Grand Budapest Hotel, a 5-star comedy classic revisited." },
-  { idx:17, msg:"The Sound of Music — a 1965 film that still earns full marks." },
-  { idx:24, msg:"Marty Supreme closes out 2025 on a high note." },
-  { idx:32, msg:"Hamnet: your highest-rated drama of January." },
-  { idx:35, msg:"Django Unchained — another 5-star gem. January was generous." },
-  { idx:37, msg:"War of the Worlds: your lowest rating of the year, just 0.5 stars." },
-  { idx:46, msg:"Cats. 0.5 stars. No further comment." },
-  { idx:55, msg:"The French Dispatch closes the collection. A strong final pick." },
+  { idx:0,  msg:"I started my watch season with Loving Vincent — a hand-painted masterpiece." },
+  { idx:3,  msg:"An early standout: Chainsaw Man earned my first perfect 5 stars." },
+  { idx:6,  msg:"Sinners — another 5-star score. I was off to a strong start." },
+  { idx:10, msg:"Your Name Engraved Herein — a quiet 5-star gem midway through November." },
+  { idx:16, msg:"I revisited The Grand Budapest Hotel and it still holds up perfectly." },
+  { idx:17, msg:"The Sound of Music — made in 1965, and I still gave it full marks." },
+  { idx:24, msg:"Marty Supreme closed out 2025 on a high note for me." },
+  { idx:32, msg:"Hamnet was my highest-rated drama of January — another 5 stars." },
+  { idx:35, msg:"Django Unchained — 5 stars. January turned out to be a great month." },
+  { idx:37, msg:"War of the Worlds: my lowest rating of the collection, just 0.5 stars." },
+  { idx:46, msg:"Cats. I gave it 0.5 stars. No further comment." },
+  { idx:52, msg:"The French Dispatch — 4.5 stars. A strong way to round out my season." },
+  { idx:56, msg:"I Origins is my final entry — 2 stars, a contemplative end to the list." },
 ];
 
 // ── STATE ────────────────────────────────────────────────────────
@@ -124,8 +126,8 @@ function updateDims() {
 function getAnnotation(d) {
   if (d.r === 5)   return '♛';   // gold crown — perfect score
   if (d.r <= 0.5)  return '✕';   // red X — worst rated
-  if (d.r - d.ar >= 1.2) return '↑'; // you liked it more than crowd
-  if (d.ar - d.r >= 1.2) return '↓'; // crowd liked it more than you
+  if (d.r - d.ar >= 1.2) return '↑'; // I liked it more than crowd
+  if (d.ar - d.r >= 1.2) return '↓'; // crowd liked it more than me
   return null;
 }
 
@@ -326,7 +328,7 @@ function showTooltip(d) {
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
   const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', year:'numeric' });
   const ann = getAnnotation(d);
-  const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↑' ? ' · you rated higher' : ann === '↓' ? ' · crowd rated higher' : '';
+  const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↑' ? ' · I rated higher' : ann === '↓' ? ' · crowd rated higher' : '';
   TIP.innerHTML = `
     <div class="tt-name">${d.t}${ann ? `<span class="tt-ann">${ann}</span>` : ''}</div>
     <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}</div>
@@ -459,8 +461,8 @@ function buildLegend(mode) {
   const annItems = [
     { label:'Perfect (5★)', sym:'♛', color:'#FFD700' },
     { label:'Lowest rated', sym:'✕', color:'#ff4444' },
-    { label:'You > Crowd',  sym:'↑', color:'#ccc' },
-    { label:'Crowd > You',  sym:'↓', color:'#ccc' },
+    { label:'I > Crowd',  sym:'↑', color:'#ccc' },
+    { label:'Crowd > I',  sym:'↓', color:'#ccc' },
   ];
 
   items.forEach(item => {
