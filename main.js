@@ -36,7 +36,66 @@ const ROW_DEFS = [
   { seats:9,  yFrac:0.88 },
 ];
 
-// Auto-tour stops: indices into DATA (sorted by date) with commentary
+// ── INSIGHT CARDS ─────────────────────────────────────────────────
+// Each card defines which film titles to spotlight and what to say.
+// Built after data loads (see buildInsights).
+let INSIGHTS = [];
+
+function buildInsights(sortedData) {
+  const perfectTitles = sortedData.filter(d => d.r === 5).map(d => d.t);
+  const disasterTitles = sortedData.filter(d => d.r <= 0.5).map(d => d.t);
+  const janTitles = sortedData.filter(d => d.d.startsWith('2026-01')).map(d => d.t);
+  // Perfect run Oct–Dec: first 7 perfect scores all fell before Jan
+  const earlyPerfect = sortedData.filter(d => d.r === 5 && d.d < '2026-01-01').map(d => d.t);
+  // Biggest crowd vs me gap
+  const iOriginsTitle = ['I Origins'];
+  const oldestTitle   = ['The Sound of Music'];
+
+  return [
+    {
+      id: 'perfect',
+      icon: '♛',
+      label: 'Nine perfect scores',
+      desc: '9 films earned 5 stars. Seven of them landed in just the first three months — then a dry spell before Hamnet and Django in January.',
+      titles: perfectTitles,
+      color: '#FFD700',
+    },
+    {
+      id: 'january',
+      icon: '📽',
+      label: 'January binge',
+      desc: 'January was by far my biggest month — 16 films in 31 days. Nearly one every other day.',
+      titles: janTitles,
+      color: '#9B6ECF',
+    },
+    {
+      id: 'disasters',
+      icon: '✕',
+      label: 'Two disasters',
+      desc: 'War of the Worlds and Cats both scored 0.5 stars — my joint-lowest ratings, just four weeks apart.',
+      titles: disasterTitles,
+      color: '#ff4444',
+    },
+    {
+      id: 'crowd',
+      icon: '↓',
+      label: 'Biggest crowd gap',
+      desc: 'I Origins is where I diverged most from the crowd: they gave it 3.7, I gave it 2.0. A 1.7-star gap.',
+      titles: iOriginsTitle,
+      color: '#aaaaff',
+    },
+    {
+      id: 'oldest',
+      icon: '🎞',
+      label: 'Oldest 5-star',
+      desc: 'The Sound of Music (1965) is the oldest film I watched — and I still gave it full marks, 60 years on.',
+      titles: oldestTitle,
+      color: '#C9A84C',
+    },
+  ];
+}
+
+// ── TOUR STOPS ────────────────────────────────────────────────────
 const TOUR_STOPS = [
   { idx:0,  msg:"I started my watch season with Loving Vincent — a hand-painted masterpiece." },
   { idx:3,  msg:"An early standout: Chainsaw Man earned my first perfect 5 stars." },
@@ -53,18 +112,30 @@ const TOUR_STOPS = [
   { idx:56, msg:"I Origins is my final entry — 2 stars, a contemplative end to the list." },
 ];
 
-// ── STATE ────────────────────────────────────────────────────────
-let DATA         = [];
-let colorMode    = 'genre';
-let sizeMode     = 'myRating';
-let filterGenre  = 'all';
-let scrubIndex   = -1;   // -1 = show all; 0..N-1 = show films up to index
-let tourActive   = false;
-let tourStep     = 0;
-let tourTimer    = null;
+// ── GENRE GLOW ────────────────────────────────────────────────────
+const GENRE_GLOW = {
+  'all':             '#b8d0ff',
+  'Drama':           '#5B8DB8',
+  'Comedy':          '#E8C14A',
+  'Fantasy':         '#9B6ECF',
+  'Romance':         '#E07CA0',
+  'Thriller':        '#E05C3A',
+  'Science Fiction': '#4DD9AC',
+};
+
+// ── STATE ─────────────────────────────────────────────────────────
+let DATA          = [];
+let colorMode     = 'genre';
+let sizeMode      = 'myRating';
+let filterGenre   = 'all';
+let scrubIndex    = -1;
+let tourActive    = false;
+let tourStep      = 0;
+let tourTimer     = null;
+let activeInsight = null;   // id of currently spotlit insight card, or null
 let W, H;
 
-// ── D3 / DOM REFS ────────────────────────────────────────────────
+// ── DOM REFS ─────────────────────────────────────────────────────
 const svg  = d3.select('#theatre');
 const wrap = document.getElementById('theatre-wrap');
 const TIP  = document.getElementById('tooltip');
@@ -104,30 +175,18 @@ function getSize(d, mode, base) {
 }
 
 // ── DIMS ─────────────────────────────────────────────────────────
-// ── GENRE SCREEN WASH ────────────────────────────────────────────────
-const GENRE_GLOW = {
-  'all':             '#b8d0ff',
-  'Drama':           '#5B8DB8',
-  'Comedy':          '#E8C14A',
-  'Fantasy':         '#9B6ECF',
-  'Romance':         '#E07CA0',
-  'Thriller':        '#E05C3A',
-  'Science Fiction': '#4DD9AC',
-};
-
 function updateDims() {
   const r = wrap.getBoundingClientRect();
   W = Math.max(r.width - 32, 300);
   H = W * ASPECT;
 }
 
-// ── ANNOTATION SYMBOLS ───────────────────────────────────────────
-// Returns an emoji/char annotation for notable films, or null
+// ── ANNOTATIONS ──────────────────────────────────────────────────
 function getAnnotation(d) {
-  if (d.r === 5)   return '♛';   // gold crown — perfect score
-  if (d.r <= 0.5)  return '✕';   // red X — worst rated
-  if (d.r - d.ar >= 1.2) return '↑'; // I liked it more than crowd
-  if (d.ar - d.r >= 1.2) return '↓'; // crowd liked it more than me
+  if (d.r === 5)           return '♛';
+  if (d.r <= 0.5)          return '✕';
+  if (d.r - d.ar >= 1.2)  return '↑';
+  if (d.ar - d.r >= 1.2)  return '↓';
   return null;
 }
 
@@ -141,11 +200,10 @@ function render() {
   const base  = Math.max(W / 72, 5.5);
   const seats = buildSeats(W, H);
 
-  // ── Defs ──
+  // Defs
   svg.selectAll('defs').remove();
   const defs = svg.append('defs');
 
-  // Film grain filter
   const filt = defs.append('filter').attr('id','grain').attr('x','0%').attr('y','0%').attr('width','100%').attr('height','100%');
   filt.append('feTurbulence').attr('type','fractalNoise').attr('baseFrequency','0.65').attr('numOctaves','3').attr('stitchTiles','stitch').attr('result','noise');
   filt.append('feColorMatrix').attr('type','saturate').attr('values','0').attr('result','grayNoise');
@@ -173,21 +231,15 @@ function render() {
   g5.append('stop').attr('offset','0%').attr('stop-color','#1a0f06').attr('stop-opacity',0);
   g5.append('stop').attr('offset','100%').attr('stop-color','#1a0f06').attr('stop-opacity',0.5);
 
-  // ── Theatre background ──
+  // Theatre background
   svg.selectAll('.bg-all').remove();
   const bg = svg.append('g').attr('class','bg-all');
-
   bg.append('rect').attr('width',W).attr('height',H).attr('fill','#0d0a07');
-
-  // Film grain overlay
-  bg.append('rect').attr('width',W).attr('height',H)
-    .attr('fill','#2a1e14').attr('opacity',0.18).attr('filter','url(#grain)');
-
+  bg.append('rect').attr('width',W).attr('height',H).attr('fill','#2a1e14').attr('opacity',0.18).attr('filter','url(#grain)');
   bg.append('ellipse').attr('class','screen-wash')
     .attr('cx',W/2).attr('cy',H*0.04).attr('rx',W*0.52).attr('ry',H*0.34)
     .attr('fill','url(#sg)');
 
-  // Screen
   const sw=W*0.68, sh=H*0.07, sx=(W-sw)/2, sy=H*0.04;
   bg.append('rect').attr('x',sx).attr('y',sy).attr('width',sw).attr('height',sh)
     .attr('fill','url(#scr)').attr('rx',2).attr('stroke','#c8d8ff').attr('stroke-width',1);
@@ -196,51 +248,71 @@ function render() {
     .attr('font-family','Playfair Display, serif').attr('font-style','italic')
     .attr('font-size',sh*0.45).attr('fill','#2a3555').attr('opacity',0.85)
     .text('Now Showing');
-
-  // Stage apron
   bg.append('rect').attr('x',sx-20).attr('y',sy+sh).attr('width',sw+40).attr('height',H*0.04).attr('fill','#0f0b07');
-
-  // Aisles
   [0.21, 0.79].forEach(f =>
-    bg.append('line')
-      .attr('x1',W*f).attr('y1',H*0.22).attr('x2',W*f).attr('y2',H)
+    bg.append('line').attr('x1',W*f).attr('y1',H*0.22).attr('x2',W*f).attr('y2',H)
       .attr('stroke','#2a1f10').attr('stroke-width',W*0.022).attr('opacity',0.5)
   );
-
-  // Curtains
   bg.append('rect').attr('x',0).attr('y',0).attr('width',W*0.12).attr('height',H).attr('fill','url(#cL)').attr('opacity',0.7);
   bg.append('rect').attr('x',W*0.88).attr('y',0).attr('width',W*0.12).attr('height',H).attr('fill','url(#cR)').attr('opacity',0.7);
   bg.append('rect').attr('x',0).attr('y',H*0.2).attr('width',W).attr('height',H*0.8).attr('fill','url(#fl)');
 
-  // ── Seat shells (chair shape) ──
+  // Seat shells
   svg.selectAll('.s-shell').remove();
-  const seatW = base * 1.7, seatH = base * 1.1, seatBack = base * 0.55;
+  const seatW=base*1.7, seatH=base*1.1, seatBack=base*0.55;
   seats.forEach(s => {
     const g = svg.append('g').attr('class','s-shell').attr('transform',`translate(${s.x},${s.y})`);
-    // seat back
     g.append('rect').attr('x',-seatW/2).attr('y',-(seatH/2+seatBack)).attr('width',seatW).attr('height',seatBack+2)
       .attr('rx',2).attr('fill','#5a3018').attr('stroke','#8a5030').attr('stroke-width',0.6);
-    // seat base
     g.append('rect').attr('x',-seatW/2).attr('y',-seatH/2).attr('width',seatW).attr('height',seatH)
       .attr('rx',3).attr('fill','#4a2a14').attr('stroke','#7a4a28').attr('stroke-width',0.8);
   });
 
-  // ── Theatregoers ──
-  // Determine which seats are visible based on scrub
+  // Determine visibility
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
-  const showUpTo = scrubIndex === -1 ? sortedData.length - 1 : scrubIndex;
+  const showUpTo   = scrubIndex === -1 ? sortedData.length - 1 : scrubIndex;
   const visibleTitles = new Set(sortedData.slice(0, showUpTo + 1).map(d => d.t));
-
   const paired = DATA.map((d, i) => ({ ...d, seat:seats[i], id:i }));
-  const genreSet = new Set(
-    paired.filter(d => filterGenre === 'all' || d.g === filterGenre).map(d => d.id)
-  );
-  const visSet = new Set(paired.filter(d => visibleTitles.has(d.t) && genreSet.has(d.id)).map(d => d.id));
+  const genreSet = new Set(paired.filter(d => filterGenre === 'all' || d.g === filterGenre).map(d => d.id));
+  const visSet   = new Set(paired.filter(d => visibleTitles.has(d.t) && genreSet.has(d.id)).map(d => d.id));
 
-  // Spotlight seat for tour
-  const spotlightTitle = tourActive ? TOUR_STOPS[tourStep] ? sortedData[TOUR_STOPS[tourStep].idx]?.t : null : null;
+  // Spotlight: tour takes priority, then insight card
+  const spotlightTitle = tourActive
+    ? (TOUR_STOPS[tourStep] ? sortedData[TOUR_STOPS[tourStep].idx]?.t : null)
+    : null;
   const spotlightId = spotlightTitle ? paired.find(d => d.t === spotlightTitle)?.id : null;
 
+  const insightTitles = activeInsight
+    ? new Set(INSIGHTS.find(i => i.id === activeInsight)?.titles || [])
+    : null;
+
+  // ── Always-on halo rings (drawn before persons so they sit behind) ──
+  svg.selectAll('.halo').remove();
+  paired.forEach(d => {
+    if (!visSet.has(d.id)) return;
+    const r = getSize(d, sizeMode, base);
+    if (d.r === 5) {
+      // Pulsing gold ring for perfect scores
+      svg.append('circle').attr('class','halo halo-perfect')
+        .attr('cx', d.seat.x).attr('cy', d.seat.y)
+        .attr('r', r * 1.65)
+        .attr('fill','none')
+        .attr('stroke','#FFD700')
+        .attr('stroke-width', 1.2)
+        .attr('opacity', 0.55);
+    } else if (d.r <= 0.5) {
+      // Dark shadow ring for disasters
+      svg.append('circle').attr('class','halo halo-disaster')
+        .attr('cx', d.seat.x).attr('cy', d.seat.y)
+        .attr('r', r * 1.65)
+        .attr('fill','none')
+        .attr('stroke','#ff2222')
+        .attr('stroke-width', 1.2)
+        .attr('opacity', 0.45);
+    }
+  });
+
+  // Theatregoers
   svg.selectAll('.tg').remove();
   const pg = svg.selectAll('.tg')
     .data(paired, d => d.id).enter()
@@ -248,39 +320,58 @@ function render() {
     .attr('transform', d => `translate(${d.seat.x},${d.seat.y})`)
     .style('cursor','pointer');
 
-  // Body circle
+  // Determine opacity: tour > insight > normal
+  function bodyOpacity(d) {
+    if (!visSet.has(d.id)) return 0;
+    if (spotlightId !== null) return spotlightId === d.id ? 1 : 0.12;
+    if (insightTitles)        return insightTitles.has(d.t)  ? 1 : 0.1;
+    return 0.92;
+  }
+  function headOpacity(d) {
+    if (!visSet.has(d.id)) return 0;
+    if (spotlightId !== null) return spotlightId === d.id ? 0.75 : 0.05;
+    if (insightTitles)        return insightTitles.has(d.t)  ? 0.75 : 0.05;
+    return 0.75;
+  }
+  function haloOpacity(d) {
+    if (!visSet.has(d.id)) return 0;
+    if (spotlightId !== null) return spotlightId === d.id ? 0.9 : 0.05;
+    if (insightTitles)        return insightTitles.has(d.t)  ? 0.9 : 0.05;
+    return d.r === 5 ? 0.55 : 0.45;
+  }
+
+  // Update halo opacity based on spotlight
+  svg.selectAll('.halo').attr('opacity', function() {
+    const cx = +d3.select(this).attr('cx');
+    const cy = +d3.select(this).attr('cy');
+    const match = paired.find(d => Math.abs(d.seat.x - cx) < 1 && Math.abs(d.seat.y - cy) < 1);
+    return match ? haloOpacity(match) : 0.5;
+  });
+
   pg.append('circle')
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) : 0)
     .attr('fill', d => getColor(d, colorMode))
     .attr('stroke', d => { const c = d3.color(getColor(d, colorMode)); return c ? c.darker(1).toString() : '#000'; })
     .attr('stroke-width', d => spotlightId === d.id ? 3 : 0.8)
-    .attr('opacity', d => {
-      if (!visSet.has(d.id)) return 0;
-      if (spotlightId !== null) return spotlightId === d.id ? 1 : 0.15;
-      return 0.92;
-    })
+    .attr('opacity', d => bodyOpacity(d))
     .transition().duration(400).ease(d3.easeCubicOut)
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) : 0);
 
-  // Head bump
   pg.append('circle')
     .attr('cx', 0).attr('cy', d => -(getSize(d, sizeMode, base) * 0.85))
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) * 0.45 : 0)
     .attr('fill', d => { const c = d3.color(getColor(d, colorMode)); return c ? c.darker(0.5).toString() : getColor(d, colorMode); })
-    .attr('opacity', d => {
-      if (!visSet.has(d.id)) return 0;
-      if (spotlightId !== null) return spotlightId === d.id ? 0.75 : 0.08;
-      return 0.75;
-    });
+    .attr('opacity', d => headOpacity(d));
 
-  // ── Annotations ──
+  // Annotation symbols
   pg.each(function(d) {
     if (!visSet.has(d.id)) return;
     const ann = getAnnotation(d);
     if (!ann) return;
     const r = getSize(d, sizeMode, base);
-    const isSpotlight = spotlightId === d.id;
-    const opacity = spotlightId !== null ? (isSpotlight ? 1 : 0.1) : 1;
+    let opacity = 1;
+    if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
+    else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
     d3.select(this).append('text')
       .attr('x', 0).attr('y', -(r * 1.55))
       .attr('text-anchor','middle').attr('dominant-baseline','middle')
@@ -295,13 +386,15 @@ function render() {
   pg.on('mouseover', function(event, d) {
       if (!visSet.has(d.id)) return;
       if (tourActive) return;
-      d3.select(this).select('circle').transition().duration(100).attr('r', getSize(d, sizeMode, base) * 1.4).attr('stroke-width', 2);
+      d3.select(this).select('circle').transition().duration(100)
+        .attr('r', getSize(d, sizeMode, base) * 1.4).attr('stroke-width', 2);
       showTooltip(d);
     })
     .on('mousemove', function(e) { moveTooltip(e); })
     .on('mouseout', function(e, d) {
       if (tourActive) return;
-      d3.select(this).select('circle').transition().duration(100).attr('r', getSize(d, sizeMode, base)).attr('stroke-width', 0.8);
+      d3.select(this).select('circle').transition().duration(100)
+        .attr('r', getSize(d, sizeMode, base)).attr('stroke-width', 0.8);
       TIP.classList.remove('visible');
     });
 
@@ -322,7 +415,7 @@ function render() {
   updateScrubLabel();
 }
 
-// ── TOOLTIP HELPERS ───────────────────────────────────────────────
+// ── TOOLTIP ───────────────────────────────────────────────────────
 function showTooltip(d) {
   const ms = '★'.repeat(Math.round(d.r)) + '☆'.repeat(5 - Math.round(d.r));
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
@@ -339,7 +432,6 @@ function showTooltip(d) {
     <div class="tt-row"><span>Rated</span><span class="tt-val">${d.cr}</span></div>`;
   TIP.classList.add('visible');
 }
-
 function moveTooltip(e) {
   TIP.style.left = Math.min(e.clientX + 14, window.innerWidth - 265) + 'px';
   TIP.style.top  = Math.min(e.clientY - 10, window.innerHeight - 210) + 'px';
@@ -369,9 +461,42 @@ function updateScrubLabel() {
   }
 }
 
+// ── INSIGHT CARDS ─────────────────────────────────────────────────
+function buildInsightCards() {
+  const container = document.getElementById('insights');
+  container.innerHTML = '';
+  INSIGHTS.forEach(ins => {
+    const card = document.createElement('div');
+    card.className = 'insight-card';
+    card.dataset.id = ins.id;
+    card.innerHTML = `
+      <div class="ic-icon" style="color:${ins.color}">${ins.icon}</div>
+      <div class="ic-label">${ins.label}</div>
+      <div class="ic-desc">${ins.desc}</div>`;
+    card.addEventListener('click', () => {
+      if (tourActive) stopTour();
+      if (activeInsight === ins.id) {
+        // Toggle off
+        activeInsight = null;
+        document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
+        TIP.classList.remove('visible');
+      } else {
+        activeInsight = ins.id;
+        document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        TIP.classList.remove('visible');
+      }
+      render();
+    });
+    container.appendChild(card);
+  });
+}
+
 // ── AUTO-TOUR ─────────────────────────────────────────────────────
 function startTour() {
   stopTour();
+  activeInsight = null;
+  document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
   tourActive = true;
   tourStep   = 0;
   scrubIndex = -1;
@@ -388,7 +513,6 @@ function stopTour() {
   TIP.classList.remove('visible');
   document.getElementById('tour-btn').textContent = '▶ Auto Tour';
   document.getElementById('tour-btn').classList.remove('active');
-  // Centre the tour tooltip
   document.getElementById('tour-card').classList.remove('visible');
   render();
 }
@@ -396,14 +520,10 @@ function stopTour() {
 function runTourStep() {
   if (!tourActive) return;
   if (tourStep >= TOUR_STOPS.length) { stopTour(); return; }
-
   const stop = TOUR_STOPS[tourStep];
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
   scrubIndex = stop.idx;
-
   render();
-
-  // Show tour card
   const card = document.getElementById('tour-card');
   const d = sortedData[stop.idx];
   card.innerHTML = `
@@ -415,8 +535,6 @@ function runTourStep() {
       <button onclick="tourNext()">Next ›</button>
     </div>`;
   card.classList.add('visible');
-
-  // Spotlight the seat in the SVG — show tooltip near centre
   const paired = DATA.map((dd,i) => ({ ...dd, id:i }));
   const target = paired.find(dd => dd.t === d.t);
   if (target) showTooltip(target);
@@ -424,16 +542,8 @@ function runTourStep() {
   TIP.style.top  = (window.innerHeight * 0.72) + 'px';
 }
 
-function tourNext() {
-  tourStep++;
-  if (tourStep >= TOUR_STOPS.length) { stopTour(); return; }
-  runTourStep();
-}
-
-function tourPrev() {
-  tourStep = Math.max(0, tourStep - 1);
-  runTourStep();
-}
+function tourNext() { tourStep++; if (tourStep >= TOUR_STOPS.length) { stopTour(); return; } runTourStep(); }
+function tourPrev() { tourStep = Math.max(0, tourStep - 1); runTourStep(); }
 
 // ── LEGEND ────────────────────────────────────────────────────────
 function buildLegend(mode) {
@@ -457,12 +567,11 @@ function buildLegend(mode) {
   else if (mode === 'contentRating')
     items = CRS.map(r => ({ label:r, color:CR_COLORS[r] }));
 
-  // Always append annotation key
   const annItems = [
     { label:'Perfect (5★)', sym:'♛', color:'#FFD700' },
     { label:'Lowest rated', sym:'✕', color:'#ff4444' },
-    { label:'I > Crowd',  sym:'↑', color:'#ccc' },
-    { label:'Crowd > I',  sym:'↓', color:'#ccc' },
+    { label:'I > Crowd',    sym:'↑', color:'#ccc' },
+    { label:'Crowd > I',    sym:'↓', color:'#ccc' },
   ];
 
   items.forEach(item => {
@@ -471,12 +580,9 @@ function buildLegend(mode) {
     div.innerHTML = `<div class="legend-dot" style="background:${item.color}"></div>${item.label}`;
     el.appendChild(div);
   });
-
-  // Separator
   const sep = document.createElement('div');
   sep.className = 'legend-sep';
   el.appendChild(sep);
-
   annItems.forEach(item => {
     const div = document.createElement('div');
     div.className = 'legend-item';
@@ -488,27 +594,31 @@ function buildLegend(mode) {
 // ── CONTROLS ─────────────────────────────────────────────────────
 document.getElementById('colorMode').addEventListener('change', function() { colorMode = this.value; buildLegend(colorMode); render(); });
 document.getElementById('sizeMode').addEventListener('change',  function() { sizeMode  = this.value; render(); });
-document.getElementById('filterMode').addEventListener('change', function() { filterGenre = this.value; render(); });
-
+document.getElementById('filterMode').addEventListener('change', function() {
+  filterGenre = this.value;
+  activeInsight = null;
+  document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
+  render();
+});
 document.getElementById('scrubber').addEventListener('input', function() {
   if (tourActive) stopTour();
   scrubIndex = +this.value;
   render();
 });
-
 document.getElementById('tour-btn').addEventListener('click', function() {
   tourActive ? stopTour() : startTour();
 });
-
 window.addEventListener('resize', render);
 
 // ── INIT ─────────────────────────────────────────────────────────
 buildLegend('genre');
 loadData().then(rows => {
   DATA = rows;
-  // Set scrubber max
+  const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
+  INSIGHTS = buildInsights(sortedData);
+  buildInsightCards();
   const scrubber = document.getElementById('scrubber');
-  scrubber.max = DATA.length - 1;
+  scrubber.max   = DATA.length - 1;
   scrubber.value = DATA.length - 1;
   scrubIndex = -1;
   requestAnimationFrame(() => requestAnimationFrame(render));
