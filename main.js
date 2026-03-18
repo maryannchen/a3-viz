@@ -80,7 +80,7 @@ function buildInsights(sortedData) {
       id: 'crowd',
       icon: '↓',
       label: 'Biggest crowd gap',
-      desc: 'I Origins is where I diverged most from the crowd: there was 1.7-star gap. In my opinion, it was pretty disappointing.',
+      desc: 'I Origins is where I diverged most from the crowd: a 1.7-star gap. In my opinion, it was pretty disappointing.',
       titles: iOriginsTitle,
       color: '#aaaaff',
     },
@@ -88,7 +88,7 @@ function buildInsights(sortedData) {
       id: 'oldest',
       icon: '🎞',
       label: 'Oldest 5-star',
-      desc: 'The Sound of Music (1965) is the oldest film I watched and it is still perfect, 60 years on.',
+      desc: 'The Sound of Music (1965) is the oldest film I watched and it is still perfect, 60 years later.',
       titles: oldestTitle,
       color: '#C9A84C',
     },
@@ -106,7 +106,7 @@ const TOUR_STOPS = [
   { idx:24, msg:"Marty Supreme closed out 2025 on a high note for me." },
   { idx:32, msg:"Hamnet was my highest-rated drama of January. Congratulations Jessie Buckley on the Oscar!" },
   { idx:35, msg:"Django Unchained — 5 stars. January was a great month." },
-  { idx:37, msg:"War of the Worlds - probably the worst movie of the year." },
+  { idx:37, msg:"War of the Worlds was probably the worst movie of 2025." },
   { idx:46, msg:"Cats (2019). No further comment." },
   { idx:52, msg:"The French Dispatch — 4.5 stars. A strong way to round out my season." },
   { idx:56, msg:"I Origins is my most recent entry...and I wish it was better!" },
@@ -421,8 +421,8 @@ function showTooltip(d) {
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
   const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', year:'numeric' });
   const ann = getAnnotation(d);
-  const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↑' ? ' · I rated higher' : ann === '↓' ? ' · crowd rated higher' : '';
-  TIP.innerHTML = `
+  const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↓' ? ' · crowd rated much higher' : '';
+  TIP.innerHTML = ` 
     <div class="tt-name">${d.t}${ann ? `<span class="tt-ann">${ann}</span>` : ''}</div>
     <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}</div>
     <div class="tt-row"><span>My rating</span><span class="tt-val">${d.r}/5 ${ms}</span></div>
@@ -470,9 +470,11 @@ function buildInsightCards() {
     card.className = 'insight-card';
     card.dataset.id = ins.id;
     card.innerHTML = `
-      <div class="ic-icon" style="color:${ins.color}">${ins.icon}</div>
-      <div class="ic-label">${ins.label}</div>
-      <div class="ic-desc">${ins.desc}</div>`;
+      <div class="ic-icon" style="color:${ins.color};opacity:0.65">${ins.icon}</div>
+      <div class="ic-body">
+        <div class="ic-label">${ins.label}</div>
+        <div class="ic-desc">${ins.desc}</div>
+      </div>`;
     card.addEventListener('click', () => {
       if (tourActive) stopTour();
       if (activeInsight === ins.id) {
@@ -570,8 +572,7 @@ function buildLegend(mode) {
   const annItems = [
     { label:'Perfect (5★)', sym:'♛', color:'#FFD700' },
     { label:'Lowest rated', sym:'✕', color:'#ff4444' },
-    { label:'I > Crowd',    sym:'↑', color:'#ccc' },
-    { label:'Crowd > I',    sym:'↓', color:'#ccc' },
+    { label:'Crowd score > my score by a large margin',    sym:'↓', color:'#ccc' },
   ];
 
   items.forEach(item => {
