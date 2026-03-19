@@ -187,14 +187,6 @@ function updateDims() {
   H = W * ASPECT;
 }
 
-// ── ANNOTATIONS ──────────────────────────────────────────────────
-function getAnnotation(d) {
-  if (d.r === 5)           return '♛';
-  if (d.r <= 0.5)          return '✕';
-  if (d.r - d.ar >= 1.2)  return '↑';
-  if (d.ar - d.r >= 1.2)  return '↓';
-  return null;
-}
 
 function isOscarNom(d) { return OSCAR_NOMS.has(d.t); }
 
@@ -396,19 +388,6 @@ pg.each(function(d) {
       .text('✦');
   }
 
-  // Existing annotation
-  if (!ann) return;
-
-  d3.select(this).append('text')
-    .attr('x', 0)
-    .attr('y', -(r * 1.55))
-    .attr('text-anchor','middle')
-    .attr('dominant-baseline','middle')
-    .attr('font-size', r * 0.85)
-    .attr('fill', ann === '♛' ? '#FFD700' : ann === '✕' ? '#ff4444' : '#ccc')
-    .attr('opacity', opacity)
-    .attr('pointer-events','none')
-    .text(ann);
 });
 
   // Tooltip events
@@ -450,7 +429,6 @@ function showTooltip(d) {
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
   const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', year:'numeric' });
   const ann = getAnnotation(d);
-  const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↓' ? ' · crowd rated much higher' : '';
   const oscarTag = isOscarNom(d) ? ' · oscar nominated' : '';
   TIP.innerHTML = ` 
     <div class="tt-name">${d.t}${ann ? `<span class="tt-ann">${ann}</span>` : ''}</div>
@@ -600,9 +578,6 @@ function buildLegend(mode) {
     items = CRS.map(r => ({ label:r, color:CR_COLORS[r] }));
 
   const annItems = [
-    { label:'Perfect (5★)', sym:'♛', color:'#FFD700' },
-    { label:'Lowest rated', sym:'✕', color:'#ff4444' },
-    { label:'Largest gap between crowd & me',    sym:'↓', color:'#ccc' },
     { label:'Oscar nominated', sym:'✦', color:'#e8d8ff' },
   ];
 
