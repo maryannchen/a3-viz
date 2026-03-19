@@ -602,7 +602,7 @@ function buildLegend(mode) {
   const annItems = [
     { label:'Perfect (5★)', sym:'♛', color:'#FFD700' },
     { label:'Lowest rated', sym:'✕', color:'#ff4444' },
-    { label:'Crowd score > my score by a large margin',    sym:'↓', color:'#ccc' },
+    { label:'Largest gap between crowd & me',    sym:'↓', color:'#ccc' },
     { label:'Oscar nominated', sym:'✦', color:'#e8d8ff' },
   ];
 
