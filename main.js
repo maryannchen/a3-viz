@@ -429,7 +429,7 @@ function showTooltip(d) {
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
   const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', year:'numeric' });
   const ann = getAnnotation(d);
-  const oscarTag = isOscarNom(d) ? ' · oscar nominated' : '';
+  const oscarTag = isOscarNom(d) ? ' · 2026 oscar nominated' : '';
   TIP.innerHTML = ` 
     <div class="tt-name">${d.t}${ann ? `<span class="tt-ann">${ann}</span>` : ''}</div>
     <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}${oscarTag}</div>
@@ -578,7 +578,7 @@ function buildLegend(mode) {
     items = CRS.map(r => ({ label:r, color:CR_COLORS[r] }));
 
   const annItems = [
-    { label:'Oscar nominated', sym:'✦', color:'#e8d8ff' },
+    { label:'2026 Oscars nominated', sym:'✦', color:'#e8d8ff' },
   ];
 
   items.forEach(item => {
