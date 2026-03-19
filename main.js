@@ -372,11 +372,18 @@ function render() {
     .attr('opacity', d => headOpacity(d));
 
   // Annotation symbols
-  pg.each(function(d) {
-    if (!visSet.has(d.id)) return;
-    const ann = getAnnotation(d);
-    if (!ann) return;
-    if (isOscarNom(d)) {
+pg.each(function(d) {
+  if (!visSet.has(d.id)) return;
+
+  const ann = getAnnotation(d);
+
+  const r = getSize(d, sizeMode, base);
+  let opacity = 1;
+
+  if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
+  else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
+
+  if (isOscarNom(d)) {
     d3.select(this).append('text')
       .attr('x', 0)
       .attr('y', -(r * 2.3))
@@ -387,20 +394,22 @@ function render() {
       .attr('opacity', opacity)
       .attr('pointer-events','none')
       .text('✦');
-    }
-    const r = getSize(d, sizeMode, base);
-    let opacity = 1;
-    if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
-    else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
-    d3.select(this).append('text')
-      .attr('x', 0).attr('y', -(r * 1.55))
-      .attr('text-anchor','middle').attr('dominant-baseline','middle')
-      .attr('font-size', r * 0.85)
-      .attr('fill', ann === '♛' ? '#FFD700' : ann === '✕' ? '#ff4444' : '#ccc')
-      .attr('opacity', opacity)
-      .attr('pointer-events','none')
-      .text(ann);
-  });
+  }
+
+  // Existing annotation
+  if (!ann) return;
+
+  d3.select(this).append('text')
+    .attr('x', 0)
+    .attr('y', -(r * 1.55))
+    .attr('text-anchor','middle')
+    .attr('dominant-baseline','middle')
+    .attr('font-size', r * 0.85)
+    .attr('fill', ann === '♛' ? '#FFD700' : ann === '✕' ? '#ff4444' : '#ccc')
+    .attr('opacity', opacity)
+    .attr('pointer-events','none')
+    .text(ann);
+});
 
   // Tooltip events
   pg.on('mouseover', function(event, d) {
