@@ -197,16 +197,6 @@ function getAnnotation(d) {
 }
 
 function isOscarNom(d) { return OSCAR_NOMS.has(d.t); }
-  if (isOscarNom(d)) {
-    d3.select(this).append('text')
-      .attr('x', ann ? r * 1.1 : 0).attr('y', -(r * 1.55))
-      .attr('text-anchor','middle').attr('dominant-baseline','middle')
-      .attr('font-size', r * 0.7)
-      .attr('fill', '#e8d8ff')
-      .attr('opacity', opacity * 0.9)
-      .attr('pointer-events','none')
-      .text('✦');
-  }
 
 // ── RENDER ───────────────────────────────────────────────────────
 function render() {
@@ -386,6 +376,18 @@ function render() {
     if (!visSet.has(d.id)) return;
     const ann = getAnnotation(d);
     if (!ann) return;
+    if (isOscarNom(d)) {
+    d3.select(this).append('text')
+      .attr('x', 0)
+      .attr('y', -(r * 2.3))
+      .attr('text-anchor','middle')
+      .attr('dominant-baseline','middle')
+      .attr('font-size', r * 0.7)
+      .attr('fill', '#e8d8ff')
+      .attr('opacity', opacity)
+      .attr('pointer-events','none')
+      .text('✦');
+    }
     const r = getSize(d, sizeMode, base);
     let opacity = 1;
     if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
