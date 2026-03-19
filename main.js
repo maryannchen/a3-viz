@@ -26,6 +26,12 @@ const GENRES = ['Drama','Comedy','Fantasy','Romance','Thriller','Science Fiction
 const CRS    = ['G','PG','PG-13','R','NR'];
 const ASPECT = 0.72;
 
+const OSCAR_NOMS = new Set([
+  'Frankenstein','One Battle After Another','Zootopia 2','Blue Moon',
+  'Marty Supreme','The Smashing Machine','Hamnet','F1','Elio',
+  'Song Sung Blue','Arco'
+]);
+
 const ROW_DEFS = [
   { seats:5,  yFrac:0.30 },
   { seats:6,  yFrac:0.40 },
@@ -189,6 +195,18 @@ function getAnnotation(d) {
   if (d.ar - d.r >= 1.2)  return '↓';
   return null;
 }
+
+function isOscarNom(d) { return OSCAR_NOMS.has(d.t); }
+  if (isOscarNom(d)) {
+    d3.select(this).append('text')
+      .attr('x', ann ? r * 1.1 : 0).attr('y', -(r * 1.55))
+      .attr('text-anchor','middle').attr('dominant-baseline','middle')
+      .attr('font-size', r * 0.7)
+      .attr('fill', '#e8d8ff')
+      .attr('opacity', opacity * 0.9)
+      .attr('pointer-events','none')
+      .text('✦');
+  }
 
 // ── RENDER ───────────────────────────────────────────────────────
 function render() {
@@ -422,9 +440,10 @@ function showTooltip(d) {
   const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', year:'numeric' });
   const ann = getAnnotation(d);
   const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↓' ? ' · crowd rated much higher' : '';
+  const oscarTag = isOscarNom(d) ? ' · oscar nominated' : '';
   TIP.innerHTML = ` 
     <div class="tt-name">${d.t}${ann ? `<span class="tt-ann">${ann}</span>` : ''}</div>
-    <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}</div>
+    <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}${oscarTag}</div>
     <div class="tt-row"><span>My rating</span><span class="tt-val">${d.r}/5 ${ms}</span></div>
     <div class="tt-row"><span>Crowd avg</span><span class="tt-val">${d.ar}/5 ${as}</span></div>
     <div class="tt-row"><span>Watched</span><span class="tt-val">${mo}</span></div>
@@ -573,6 +592,7 @@ function buildLegend(mode) {
     { label:'Perfect (5★)', sym:'♛', color:'#FFD700' },
     { label:'Lowest rated', sym:'✕', color:'#ff4444' },
     { label:'Crowd score > my score by a large margin',    sym:'↓', color:'#ccc' },
+    { label:'Oscar nominated', sym:'✦', color:'#e8d8ff' },
   ];
 
   items.forEach(item => {
