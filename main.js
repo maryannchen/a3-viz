@@ -429,9 +429,10 @@ function showTooltip(d) {
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
   const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', year:'numeric' });
   const ann = getAnnotation(d);
+  const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↓' ? ' · crowd rated much higher' : '';
   const oscarTag = isOscarNom(d) ? ' · 2026 oscar nominated' : '';
   TIP.innerHTML = ` 
-    <div class="tt-name">${d.t}${ann ? `<span class="tt-ann">${ann}</span>` : ''}</div>
+    <div class="tt-name">${d.t}</div>
     <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}${oscarTag}</div>
     <div class="tt-row"><span>My rating</span><span class="tt-val">${d.r}/5 ${ms}</span></div>
     <div class="tt-row"><span>Crowd avg</span><span class="tt-val">${d.ar}/5 ${as}</span></div>
