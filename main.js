@@ -286,31 +286,7 @@ function render() {
     ? new Set(INSIGHTS.find(i => i.id === activeInsight)?.titles || [])
     : null;
 
-  // ── Always-on halo rings (drawn before persons so they sit behind) ──
-  svg.selectAll('.halo').remove();
-  paired.forEach(d => {
-    if (!visSet.has(d.id)) return;
-    const r = getSize(d, sizeMode, base);
-    if (d.r === 5) {
-      // Pulsing gold ring for perfect scores
-      svg.append('circle').attr('class','halo halo-perfect')
-        .attr('cx', d.seat.x).attr('cy', d.seat.y)
-        .attr('r', r * 1.65)
-        .attr('fill','none')
-        .attr('stroke','#FFD700')
-        .attr('stroke-width', 1.2)
-        .attr('opacity', 0.55);
-    } else if (d.r <= 0.5) {
-      // Dark shadow ring for disasters
-      svg.append('circle').attr('class','halo halo-disaster')
-        .attr('cx', d.seat.x).attr('cy', d.seat.y)
-        .attr('r', r * 1.65)
-        .attr('fill','none')
-        .attr('stroke','#ff2222')
-        .attr('stroke-width', 1.2)
-        .attr('opacity', 0.45);
-    }
-  });
+
 
   // Theatregoers
   svg.selectAll('.tg').remove();
@@ -333,20 +309,7 @@ function render() {
     if (insightTitles)        return insightTitles.has(d.t)  ? 0.75 : 0.05;
     return 0.75;
   }
-  function haloOpacity(d) {
-    if (!visSet.has(d.id)) return 0;
-    if (spotlightId !== null) return spotlightId === d.id ? 0.9 : 0.05;
-    if (insightTitles)        return insightTitles.has(d.t)  ? 0.9 : 0.05;
-    return d.r === 5 ? 0.55 : 0.45;
-  }
 
-  // Update halo opacity based on spotlight
-  svg.selectAll('.halo').attr('opacity', function() {
-    const cx = +d3.select(this).attr('cx');
-    const cy = +d3.select(this).attr('cy');
-    const match = paired.find(d => Math.abs(d.seat.x - cx) < 1 && Math.abs(d.seat.y - cy) < 1);
-    return match ? haloOpacity(match) : 0.5;
-  });
 
   pg.append('circle')
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) : 0)
@@ -363,32 +326,26 @@ function render() {
     .attr('fill', d => { const c = d3.color(getColor(d, colorMode)); return c ? c.darker(0.5).toString() : getColor(d, colorMode); })
     .attr('opacity', d => headOpacity(d));
 
-  // Annotation symbols
-pg.each(function(d) {
-  if (!visSet.has(d.id)) return;
-
-  const ann = getAnnotation(d);
-
-  const r = getSize(d, sizeMode, base);
-  let opacity = 1;
-
-  if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
-  else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
-
-  if (isOscarNom(d)) {
+  // Oscar nomination symbol
+  pg.each(function(d) {
+    if (!visSet.has(d.id)) return;
+    if (!isOscarNom(d)) return;
+    const r = getSize(d, sizeMode, base);
+    let opacity = 1;
+    if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
+    else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
     d3.select(this).append('text')
       .attr('x', 0)
       .attr('y', -(r * 2.3))
-      .attr('text-anchor','middle')
-      .attr('dominant-baseline','middle')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
       .attr('font-size', r * 0.7)
       .attr('fill', '#e8d8ff')
       .attr('opacity', opacity)
-      .attr('pointer-events','none')
+      .attr('pointer-events', 'none')
       .text('✦');
-  }
+  });
 
-});
 
   // Tooltip events
   pg.on('mouseover', function(event, d) {
@@ -399,7 +356,7 @@ pg.each(function(d) {
       showTooltip(d);
     })
     .on('mousemove', function(e) { moveTooltip(e); })
-    .on('mouseout', function(e, d) {
+    .on('mouseout', function(event, d) {
       if (tourActive) return;
       d3.select(this).select('circle').transition().duration(100)
         .attr('r', getSize(d, sizeMode, base)).attr('stroke-width', 0.8);
