@@ -336,7 +336,7 @@ function render() {
     else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
     d3.select(this).append('text')
       .attr('x', 0)
-      .attr('y', -(r * 2.3))
+      .attr('y', -(r * 1.6))
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('font-size', r * 0.7)
@@ -381,6 +381,14 @@ function render() {
 }
 
 // ── TOOLTIP ───────────────────────────────────────────────────────
+function getAnnotation(d) {
+  if (d.r === 5)  return '♛';
+  if (d.r <= 0.5) return '✕';
+  const gap = d.ar - d.r;
+  if (gap >= 1.5) return '↓';
+  return '';
+}
+
 function showTooltip(d) {
   const ms = '★'.repeat(Math.round(d.r)) + '☆'.repeat(5 - Math.round(d.r));
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
@@ -388,8 +396,8 @@ function showTooltip(d) {
   const ann = getAnnotation(d);
   const annLabel = ann === '♛' ? ' · perfect score' : ann === '✕' ? ' · lowest rated' : ann === '↓' ? ' · crowd rated much higher' : '';
   const oscarTag = isOscarNom(d) ? ' · 2026 oscar nominated' : '';
-  TIP.innerHTML = ` 
-    <div class="tt-name">${d.t}</div>
+  TIP.innerHTML = `
+    <div class="tt-name"><span>${d.t}</span></div>
     <div class="tt-genre" style="color:${GENRE_COLORS[d.g]||'#aaa'}">${d.g}${d.g2?' · '+d.g2:''}${annLabel}${oscarTag}</div>
     <div class="tt-row"><span>My rating</span><span class="tt-val">${d.r}/5 ${ms}</span></div>
     <div class="tt-row"><span>Crowd avg</span><span class="tt-val">${d.ar}/5 ${as}</span></div>
