@@ -311,6 +311,24 @@ function render() {
   }
 
 
+  // Halos for perfect scores (gold pulse) and disasters (red pulse)
+  pg.each(function(d) {
+    if (!visSet.has(d.id)) return;
+    const isPerfect  = d.r === 5;
+    const isDisaster = d.r <= 0.5;
+    if (!isPerfect && !isDisaster) return;
+    const r = getSize(d, sizeMode, base);
+    let opacity = isPerfect ? 0.5 : 0.4;
+    if (spotlightId !== null) opacity *= spotlightId === d.id ? 1 : 0.08;
+    else if (insightTitles)   opacity *= insightTitles.has(d.t) ? 1 : 0.08;
+    d3.select(this).insert('circle', ':first-child')
+      .attr('class', isPerfect ? 'halo-perfect' : 'halo-disaster')
+      .attr('r', r * 2.2)
+      .attr('fill', isPerfect ? '#f6d477' : '#ff4422')
+      .attr('opacity', opacity)
+      .attr('pointer-events', 'none');
+  });
+
   pg.append('circle')
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) : 0)
     .attr('fill', d => getColor(d, colorMode))
