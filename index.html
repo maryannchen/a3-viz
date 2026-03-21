@@ -328,22 +328,143 @@
 
     /* ── Always-on halos ── */
     @keyframes pulseGold {
-      0%, 100% { opacity: 0.35; }
-      50%       { opacity: 0.65; }
+      0%, 100% { opacity: 0.15; }
+      50%       { opacity: 0.28; }
     }
     @keyframes pulseRed {
-      0%, 100% { opacity: 0.25; }
-      50%       { opacity: 0.5; }
+      0%, 100% { opacity: 0.1; }
+      50%       { opacity: 0.22; }
     }
-    .halo-perfect  { animation: pulseGold 2.8s ease-in-out infinite; }
-    .halo-disaster { animation: pulseRed  3.4s ease-in-out infinite; }
+    .halo-perfect  { animation: pulseGold 4.5s ease-in-out infinite; }
+    .halo-disaster { animation: pulseRed  5.5s ease-in-out infinite; }
 
     /* ── Seat fade-in ── */
     @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
     .theatregoer { animation: fadeIn 0.4s ease both; }
+
+    /* ── Curtain overlay ── */
+    #curtain {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      pointer-events: all;
+      display: flex;
+    }
+    #curtain.gone { pointer-events: none; }
+
+    .curtain-panel {
+      position: relative;
+      width: 50%;
+      height: 100%;
+      overflow: hidden;
+      background: #6b0f0f;
+    }
+    .curtain-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        rgba(0,0,0,0.18) 6px,
+        transparent 12px,
+        rgba(255,255,255,0.04) 18px,
+        transparent 24px
+      );
+    }
+    .curtain-panel::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(255,220,180,0.07) 0%,
+        transparent 40%,
+        rgba(0,0,0,0.22) 100%
+      );
+    }
+    .curtain-panel.left  { border-right: 3px solid #c9a84c; }
+    .curtain-panel.right { border-left:  3px solid #c9a84c; }
+
+    #curtain-title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    #curtain-title .ct-main {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,0.6), 0 2px 8px rgba(0,0,0,0.8);
+      white-space: nowrap;
+    }
+    #curtain-title .ct-sub {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #e1bb8c;
+      margin-top: 0.5rem;
+      opacity: 0.8;
+    }
+    #curtain-title .ct-line {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0.6rem auto;
+    }
+
+
+    .curtain-valance {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 56px;
+      z-index: 2;
+      background: linear-gradient(180deg, #4a0808 0%, #6b0f0f 100%);
+      border-bottom: 2px solid #c9a84c55;
+    }
+    /* Scalloped bottom edge */
+    .curtain-valance::after {
+      content: '';
+      position: absolute;
+      bottom: -14px; left: 0;
+      width: 100%; height: 14px;
+      background: radial-gradient(circle at 50% 0%, #6b0f0f 70%, transparent 71%) 0 0 / 40px 14px repeat-x;
+    }
+
+    @keyframes curtainLeft        { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+    @keyframes curtainRight       { from { transform: translateX(0); } to { transform: translateX(100%);  } }
+    @keyframes curtainFadeTitle   { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+
+    .curtain-panel.left.open  { animation: curtainLeft  1.1s cubic-bezier(0.7,0,1,1) 1.2s forwards; }
+    .curtain-panel.right.open { animation: curtainRight 1.1s cubic-bezier(0.7,0,1,1) 1.2s forwards; }
+    #curtain-title.open       { animation: curtainFadeTitle 1.4s ease 1.0s forwards; }
+
+    #curtain.gone { display: none; }
   </style>
 </head>
 <body>
+
+  <!-- ── Curtain ── -->
+  <div id="curtain">
+    <div class="curtain-valance"></div>
+    <div class="curtain-panel left"></div>
+    <div class="curtain-panel right"></div>
+    <div id="curtain-title">
+      <div class="ct-line"></div>
+      <div class="ct-main">M Y &nbsp; C I N E M A</div>
+      <div class="ct-sub">movies i watched &nbsp;·&nbsp; each seat, an experience</div>
+      <div class="ct-line"></div>
+    </div>
+  </div>
 
   <header>
     <div class="title">M Y &nbsp; C I N E M A</div>
@@ -414,5 +535,20 @@
   <div id="tour-card"></div>
 
   <script src="main.js"></script>
+  <script>
+    // Trigger curtain open shortly after load
+    window.addEventListener('DOMContentLoaded', () => {
+      const curtain = document.getElementById('curtain');
+      const title   = document.getElementById('curtain-title');
+      // Small delay so the page paints first
+      setTimeout(() => {
+        curtain.querySelector('.left').classList.add('open');
+        curtain.querySelector('.right').classList.add('open');
+        title.classList.add('open');
+        // Remove from flow once panels have slid away
+        setTimeout(() => curtain.classList.add('gone'), 3200);
+      }, 300);
+    });
+  </script>
 </body>
 </html>
