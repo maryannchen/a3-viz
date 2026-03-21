@@ -217,33 +217,7 @@
     #tooltip .tt-row { display: flex; justify-content: space-between; gap: 1rem; }
     #tooltip .tt-val { color: var(--gold); }
 
-    /* ── Tour card ── */
-    #tour-card {
-      position: fixed;
-      bottom: 6rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #140e06f4;
-      border: 1px solid var(--gold);
-      border-radius: 4px;
-      padding: 1rem 1.4rem;
-      font-size: 0.72rem;
-      line-height: 1.7;
-      color: var(--cream);
-      max-width: 400px;
-      width: 90%;
-      z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      text-align: center;
-    }
-    #tour-card.visible { opacity: 1; pointer-events: all; }
-    #tour-card .tc-step { font-size: 0.55rem; letter-spacing: 0.2em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 0.3rem; }
-    #tour-card .tc-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1rem; color: var(--gold); margin-bottom: 0.4rem; }
-    #tour-card .tc-msg { color: #c8b080; margin-bottom: 0.8rem; font-size: 0.68rem; }
-    #tour-card .tc-nav { display: flex; gap: 0.6rem; justify-content: center; }
-    #tour-card .tc-nav button { font-size: 0.68rem; padding: 0.3rem 0.9rem; }
+    
 
     /* ── Stats ── */
     #stats {
@@ -258,70 +232,7 @@
     }
     #stats span { color: var(--gold); }
 
-/* ── Insights panel ── */
-    .insights-wrap {
-      max-width: 980px;
-      margin: 0 auto 1.5rem;
-      padding: 0 1rem;
-    }
-    .insights-heading {
-      font-size: 0.52rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--gold-dim);
-      margin-bottom: 0.45rem;
-      text-align: center;
-    }
-    #insights {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      justify-content: center;
-    }
-    .insight-card {
-      background: #130e07;
-      border: 1px solid #2a1c0c;
-      border-radius: 3px;
-      padding: 0.5rem 0.75rem;
-      cursor: pointer;
-      transition: border-color 0.25s, background 0.25s;
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      flex: 1;
-      min-width: 140px;
-      max-width: 200px;
-    }
-    .insight-card:hover {
-      border-color: #5a3e1a;
-      background: #1a1108;
-    }
-    .insight-card.active {
-      border-color: var(--gold-dim);
-      background: #1e1409;
-    }
-    .ic-icon {
-      font-size: 0.75rem;
-      line-height: 1.4;
-      flex-shrink: 0;
-      opacity: 0.7;
-    }
-    .ic-body { display: flex; flex-direction: column; gap: 0.15rem; }
-    .ic-label {
-      font-size: 0.75rem;
-      letter-spacing: 0.06em;
-      color: #c8b080;
-      line-height: 1.3;
-    }
-    .insight-card.active .ic-label { color: #b4874a; }
-    .ic-desc {
-      font-size: 0.68rem;
-      color: #a48866;
-      line-height: 1.45;
-      letter-spacing: 0.02em;
-    }
-    .insight-card:hover .ic-desc,
-    .insight-card.active .ic-desc { color: #c8b080; }
+
 
     /* ── Screen wash transition ── */
     .screen-wash { transition: fill 0.6s ease; }
@@ -386,41 +297,6 @@
     .curtain-panel.left  { border-right: 3px solid #c9a84c; }
     .curtain-panel.right { border-left:  3px solid #c9a84c; }
 
-    #curtain-title {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      z-index: 1000;
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 0.5s ease;
-    }
-    #curtain-title .ct-main {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.8rem, 5vw, 3.2rem);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--gold);
-      text-shadow: 0 0 40px rgba(201,168,76,0.6), 0 2px 8px rgba(0,0,0,0.8);
-      white-space: nowrap;
-    }
-    #curtain-title .ct-sub {
-      font-size: 0.65rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: #e1bb8c;
-      margin-top: 0.5rem;
-      opacity: 0.8;
-    }
-    #curtain-title .ct-line {
-      width: 80px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--gold), transparent);
-      margin: 0.6rem auto;
-    }
-
 
     .curtain-valance {
       position: absolute;
@@ -442,11 +318,9 @@
 
     @keyframes curtainLeft        { from { transform: translateX(0); } to { transform: translateX(-100%); } }
     @keyframes curtainRight       { from { transform: translateX(0); } to { transform: translateX(100%);  } }
-    @keyframes curtainFadeTitle   { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
 
-    .curtain-panel.left.open  { animation: curtainLeft  1.1s cubic-bezier(0.7,0,1,1) 1.2s forwards; }
-    .curtain-panel.right.open { animation: curtainRight 1.1s cubic-bezier(0.7,0,1,1) 1.2s forwards; }
-    #curtain-title.open       { animation: curtainFadeTitle 1.4s ease 1.0s forwards; }
+    .curtain-panel.left.open  { animation: curtainLeft  0.9s cubic-bezier(0.76,0,0.24,1) 0s forwards; }
+    .curtain-panel.right.open { animation: curtainRight 0.9s cubic-bezier(0.76,0,0.24,1) 0s forwards; }
 
     #curtain.gone { display: none; }
   </style>
@@ -458,12 +332,6 @@
     <div class="curtain-valance"></div>
     <div class="curtain-panel left"></div>
     <div class="curtain-panel right"></div>
-    <div id="curtain-title">
-      <div class="ct-line"></div>
-      <div class="ct-main">M Y &nbsp; C I N E M A</div>
-      <div class="ct-sub">movies i watched &nbsp;·&nbsp; each seat, an experience</div>
-      <div class="ct-line"></div>
-    </div>
   </div>
 
   <header>
@@ -502,9 +370,7 @@
         <option value="Science Fiction">Sci-Fi</option>
       </select>
     </div>
-    <div class="ctrl-group">
-      <button id="tour-btn">▶ Auto Tour</button>
-    </div>
+
   </div>
 
   <!-- Timeline scrubber -->
@@ -525,29 +391,18 @@
     TOP GENRE <span id="s-genre">—</span>
   </div>
 
-  <!-- Insights panel -->
-  <div class="insights-wrap">
-    <div class="insights-heading">Insights — click to spotlight</div>
-    <div id="insights"></div>
-  </div>
-
   <div id="tooltip"></div>
-  <div id="tour-card"></div>
-
   <script src="main.js"></script>
   <script>
     // Trigger curtain open shortly after load
     window.addEventListener('DOMContentLoaded', () => {
       const curtain = document.getElementById('curtain');
-      const title   = document.getElementById('curtain-title');
-      // Small delay so the page paints first
-      setTimeout(() => {
+      // Brief paint delay then open immediately
+      requestAnimationFrame(() => requestAnimationFrame(() => {
         curtain.querySelector('.left').classList.add('open');
         curtain.querySelector('.right').classList.add('open');
-        title.classList.add('open');
-        // Remove from flow once panels have slid away
-        setTimeout(() => curtain.classList.add('gone'), 3200);
-      }, 300);
+        setTimeout(() => curtain.classList.add('gone'), 1100);
+      }));
     });
   </script>
 </body>

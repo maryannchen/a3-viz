@@ -42,82 +42,6 @@ const ROW_DEFS = [
   { seats:9,  yFrac:0.88 },
 ];
 
-// ── INSIGHT CARDS ─────────────────────────────────────────────────
-// Each card defines which film titles to spotlight and what to say.
-// Built after data loads (see buildInsights).
-let INSIGHTS = [];
-
-function buildInsights(sortedData) {
-  const perfectTitles = sortedData.filter(d => d.r === 5).map(d => d.t);
-  const disasterTitles = sortedData.filter(d => d.r <= 0.5).map(d => d.t);
-  const janTitles = sortedData.filter(d => d.d.startsWith('2026-01')).map(d => d.t);
-  // Perfect run Oct–Dec: first 7 perfect scores all fell before Jan
-  const earlyPerfect = sortedData.filter(d => d.r === 5 && d.d < '2026-01-01').map(d => d.t);
-  // Biggest crowd vs me gap
-  const iOriginsTitle = ['I Origins'];
-  const oldestTitle   = ['The Sound of Music'];
-
-  return [
-    {
-      id: 'perfect',
-      icon: '♛',
-      label: 'Nine perfect scores',
-      desc: '9 films earned 5 stars. 7 of them were in the first three months, then a dry spell before Hamnet and Django Unchained in January.',
-      titles: perfectTitles,
-      color: '#FFD700',
-    },
-    {
-      id: 'january',
-      icon: '📽',
-      label: 'January binge',
-      desc: 'January was by far my biggest watch-month: 16 films in 31 days.',
-      titles: janTitles,
-      color: '#9B6ECF',
-    },
-    {
-      id: 'disasters',
-      icon: '✕',
-      label: 'Disasters',
-      desc: 'War of the Worlds and Cats both scored 0.5 stars, my lowest ratings that were just four weeks apart.',
-      titles: disasterTitles,
-      color: '#ff4444',
-    },
-    {
-      id: 'crowd',
-      icon: '↓',
-      label: 'Biggest crowd gap',
-      desc: 'I Origins is where I diverged most from the crowd: a 1.7-star gap. In my opinion, it was pretty disappointing.',
-      titles: iOriginsTitle,
-      color: '#aaaaff',
-    },
-    {
-      id: 'oldest',
-      icon: '🎞',
-      label: 'Oldest 5-star',
-      desc: 'The Sound of Music (1965) is the oldest film I watched and it is still perfect, 60 years later.',
-      titles: oldestTitle,
-      color: '#C9A84C',
-    },
-  ];
-}
-
-// ── TOUR STOPS ────────────────────────────────────────────────────
-const TOUR_STOPS = [
-  { idx:0,  msg:"I started my watch season with Loving Vincent, a hand-painted masterpiece." },
-  { idx:3,  msg:"An early standout: Chainsaw Man earned my first perfect 5 stars." },
-  { idx:6,  msg:"Sinners — another 5-star score and one of my new personal favorites." },
-  { idx:10, msg:"Your Name Engraved Herein — a quiet 5-star gem midway through November." },
-  { idx:17, msg:"The Sound of Music - made in 1965, and a forever timeless classic." },
-  { idx:20, msg:"I rewatched Klaus for the holiday season and it never disappoiints." },
-  { idx:24, msg:"Marty Supreme closed out 2025 on a high note for me." },
-  { idx:32, msg:"Hamnet was my highest-rated drama of January. Congratulations Jessie Buckley on the Oscar!" },
-  { idx:35, msg:"Django Unchained — 5 stars. January was a great month." },
-  { idx:37, msg:"War of the Worlds was probably the worst movie of 2025." },
-  { idx:46, msg:"Cats (2019). No further comment." },
-  { idx:52, msg:"The French Dispatch — 4.5 stars. A strong way to round out my season." },
-  { idx:56, msg:"I Origins is my most recent entry...and I wish it was better!" },
-];
-
 // ── GENRE GLOW ────────────────────────────────────────────────────
 const GENRE_GLOW = {
   'all':             '#b8d0ff',
@@ -135,10 +59,6 @@ let colorMode     = 'genre';
 let sizeMode      = 'myRating';
 let filterGenre   = 'all';
 let scrubIndex    = -1;
-let tourActive    = false;
-let tourStep      = 0;
-let tourTimer     = null;
-let activeInsight = null;   // id of currently spotlit insight card, or null
 let W, H;
 
 // ── DOM REFS ─────────────────────────────────────────────────────
@@ -174,8 +94,8 @@ function getColor(d, mode) {
 }
 
 function getSize(d, mode, base) {
-  if (mode === 'myRating')  return base * (0.55 + (d.r / 5) * 0.95);
-  if (mode === 'avgRating') return base * (0.55 + (d.ar / 5) * 0.95);
+  if (mode === 'myRating')  return base * (0.3 + (d.r / 5) * 1.4);
+  if (mode === 'avgRating') return base * (0.3 + (d.ar / 5) * 1.4);
   if (mode === 'year')      return base * (0.5 + Math.min((2026 - d.y) / 65, 1) * 1.1);
   return base;
 }
@@ -276,15 +196,7 @@ function render() {
   const genreSet = new Set(paired.filter(d => filterGenre === 'all' || d.g === filterGenre).map(d => d.id));
   const visSet   = new Set(paired.filter(d => visibleTitles.has(d.t) && genreSet.has(d.id)).map(d => d.id));
 
-  // Spotlight: tour takes priority, then insight card
-  const spotlightTitle = tourActive
-    ? (TOUR_STOPS[tourStep] ? sortedData[TOUR_STOPS[tourStep].idx]?.t : null)
-    : null;
-  const spotlightId = spotlightTitle ? paired.find(d => d.t === spotlightTitle)?.id : null;
-
-  const insightTitles = activeInsight
-    ? new Set(INSIGHTS.find(i => i.id === activeInsight)?.titles || [])
-    : null;
+  const spotlightId = null;
 
 
 
@@ -296,17 +208,15 @@ function render() {
     .attr('transform', d => `translate(${d.seat.x},${d.seat.y})`)
     .style('cursor','pointer');
 
-  // Determine opacity: tour > insight > normal
+  // Determine opacity
   function bodyOpacity(d) {
     if (!visSet.has(d.id)) return 0;
     if (spotlightId !== null) return spotlightId === d.id ? 1 : 0.12;
-    if (insightTitles)        return insightTitles.has(d.t)  ? 1 : 0.1;
     return 0.92;
   }
   function headOpacity(d) {
     if (!visSet.has(d.id)) return 0;
     if (spotlightId !== null) return spotlightId === d.id ? 0.75 : 0.05;
-    if (insightTitles)        return insightTitles.has(d.t)  ? 0.75 : 0.05;
     return 0.75;
   }
 
@@ -320,7 +230,6 @@ function render() {
     const r = getSize(d, sizeMode, base);
     let opacity = isPerfect ? 0.22 : 0.18;
     if (spotlightId !== null) opacity *= spotlightId === d.id ? 1 : 0.08;
-    else if (insightTitles)   opacity *= insightTitles.has(d.t) ? 1 : 0.08;
     d3.select(this).insert('circle', ':first-child')
       .attr('class', isPerfect ? 'halo-perfect' : 'halo-disaster')
       .attr('r', r * 1.6)
@@ -351,7 +260,6 @@ function render() {
     const r = getSize(d, sizeMode, base);
     let opacity = 1;
     if (spotlightId !== null) opacity = spotlightId === d.id ? 1 : 0.05;
-    else if (insightTitles)   opacity = insightTitles.has(d.t) ? 1 : 0.05;
     d3.select(this).append('text')
       .attr('x', 0)
       .attr('y', -(r * 1.6))
@@ -368,15 +276,13 @@ function render() {
   // Tooltip events
   pg.on('mouseover', function(event, d) {
       if (!visSet.has(d.id)) return;
-      if (tourActive) return;
-      d3.select(this).select('circle').transition().duration(100)
+      d3.select(this).selectAll('circle').filter(function(){ return !this.classList.contains('halo-perfect') && !this.classList.contains('halo-disaster'); }).transition().duration(100)
         .attr('r', getSize(d, sizeMode, base) * 1.4).attr('stroke-width', 2);
       showTooltip(d);
     })
     .on('mousemove', function(e) { moveTooltip(e); })
     .on('mouseout', function(event, d) {
-      if (tourActive) return;
-      d3.select(this).select('circle').transition().duration(100)
+      d3.select(this).selectAll('circle').filter(function(){ return !this.classList.contains('halo-perfect') && !this.classList.contains('halo-disaster'); }).transition().duration(100)
         .attr('r', getSize(d, sizeMode, base)).attr('stroke-width', 0.8);
       TIP.classList.remove('visible');
     });
@@ -453,91 +359,6 @@ function updateScrubLabel() {
   }
 }
 
-// ── INSIGHT CARDS ─────────────────────────────────────────────────
-function buildInsightCards() {
-  const container = document.getElementById('insights');
-  container.innerHTML = '';
-  INSIGHTS.forEach(ins => {
-    const card = document.createElement('div');
-    card.className = 'insight-card';
-    card.dataset.id = ins.id;
-    card.innerHTML = `
-      <div class="ic-icon" style="color:${ins.color};opacity:0.65">${ins.icon}</div>
-      <div class="ic-body">
-        <div class="ic-label">${ins.label}</div>
-        <div class="ic-desc">${ins.desc}</div>
-      </div>`;
-    card.addEventListener('click', () => {
-      if (tourActive) stopTour();
-      if (activeInsight === ins.id) {
-        // Toggle off
-        activeInsight = null;
-        document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
-        TIP.classList.remove('visible');
-      } else {
-        activeInsight = ins.id;
-        document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
-        card.classList.add('active');
-        TIP.classList.remove('visible');
-      }
-      render();
-    });
-    container.appendChild(card);
-  });
-}
-
-// ── AUTO-TOUR ─────────────────────────────────────────────────────
-function startTour() {
-  stopTour();
-  activeInsight = null;
-  document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
-  tourActive = true;
-  tourStep   = 0;
-  scrubIndex = -1;
-  filterGenre = 'all';
-  document.getElementById('filterMode').value = 'all';
-  document.getElementById('tour-btn').textContent = '◼ Stop Tour';
-  document.getElementById('tour-btn').classList.add('active');
-  runTourStep();
-}
-
-function stopTour() {
-  tourActive = false;
-  if (tourTimer) { clearTimeout(tourTimer); tourTimer = null; }
-  TIP.classList.remove('visible');
-  document.getElementById('tour-btn').textContent = '▶ Auto Tour';
-  document.getElementById('tour-btn').classList.remove('active');
-  document.getElementById('tour-card').classList.remove('visible');
-  render();
-}
-
-function runTourStep() {
-  if (!tourActive) return;
-  if (tourStep >= TOUR_STOPS.length) { stopTour(); return; }
-  const stop = TOUR_STOPS[tourStep];
-  const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
-  scrubIndex = stop.idx;
-  render();
-  const card = document.getElementById('tour-card');
-  const d = sortedData[stop.idx];
-  card.innerHTML = `
-    <div class="tc-step">${tourStep+1} / ${TOUR_STOPS.length}</div>
-    <div class="tc-title">${d.t}</div>
-    <div class="tc-msg">${stop.msg}</div>
-    <div class="tc-nav">
-      <button onclick="tourPrev()">‹ Prev</button>
-      <button onclick="tourNext()">Next ›</button>
-    </div>`;
-  card.classList.add('visible');
-  const paired = DATA.map((dd,i) => ({ ...dd, id:i }));
-  const target = paired.find(dd => dd.t === d.t);
-  if (target) showTooltip(target);
-  TIP.style.left = (window.innerWidth / 2 - 125) + 'px';
-  TIP.style.top  = (window.innerHeight * 0.72) + 'px';
-}
-
-function tourNext() { tourStep++; if (tourStep >= TOUR_STOPS.length) { stopTour(); return; } runTourStep(); }
-function tourPrev() { tourStep = Math.max(0, tourStep - 1); runTourStep(); }
 
 // ── LEGEND ────────────────────────────────────────────────────────
 function buildLegend(mode) {
@@ -587,17 +408,11 @@ document.getElementById('colorMode').addEventListener('change', function() { col
 document.getElementById('sizeMode').addEventListener('change',  function() { sizeMode  = this.value; render(); });
 document.getElementById('filterMode').addEventListener('change', function() {
   filterGenre = this.value;
-  activeInsight = null;
-  document.querySelectorAll('.insight-card').forEach(c => c.classList.remove('active'));
   render();
 });
 document.getElementById('scrubber').addEventListener('input', function() {
-  if (tourActive) stopTour();
   scrubIndex = +this.value;
   render();
-});
-document.getElementById('tour-btn').addEventListener('click', function() {
-  tourActive ? stopTour() : startTour();
 });
 window.addEventListener('resize', render);
 
@@ -606,8 +421,6 @@ buildLegend('genre');
 loadData().then(rows => {
   DATA = rows;
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
-  INSIGHTS = buildInsights(sortedData);
-  buildInsightCards();
   const scrubber = document.getElementById('scrubber');
   scrubber.max   = DATA.length - 1;
   scrubber.value = DATA.length - 1;
