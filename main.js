@@ -276,14 +276,22 @@ function render() {
   // Tooltip events
   pg.on('mouseover', function(event, d) {
       if (!visSet.has(d.id)) return;
-      d3.select(this).selectAll('circle').filter(function(){ return !this.classList.contains('halo-perfect') && !this.classList.contains('halo-disaster'); }).transition().duration(100)
-        .attr('r', getSize(d, sizeMode, base) * 1.4).attr('stroke-width', 2);
+      const r = getSize(d, sizeMode, base);
+      const circles = d3.select(this).selectAll('circle').filter(function() {
+        return !this.classList.contains('halo-perfect') && !this.classList.contains('halo-disaster');
+      }).nodes();
+      d3.select(circles[0]).transition().duration(100).attr('r', r * 1.4).attr('stroke-width', 2);
+      d3.select(circles[1]).transition().duration(100).attr('r', r * 0.45 * 1.4).attr('cy', -(r * 1.4 * 0.85));
       showTooltip(d);
     })
     .on('mousemove', function(e) { moveTooltip(e); })
     .on('mouseout', function(event, d) {
-      d3.select(this).selectAll('circle').filter(function(){ return !this.classList.contains('halo-perfect') && !this.classList.contains('halo-disaster'); }).transition().duration(100)
-        .attr('r', getSize(d, sizeMode, base)).attr('stroke-width', 0.8);
+      const r = getSize(d, sizeMode, base);
+      const circles = d3.select(this).selectAll('circle').filter(function() {
+        return !this.classList.contains('halo-perfect') && !this.classList.contains('halo-disaster');
+      }).nodes();
+      d3.select(circles[0]).transition().duration(100).attr('r', r).attr('stroke-width', 0.8);
+      d3.select(circles[1]).transition().duration(100).attr('r', r * 0.45).attr('cy', -(r * 0.85));
       TIP.classList.remove('visible');
     });
 
