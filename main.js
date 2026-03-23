@@ -282,6 +282,8 @@ function render() {
       }).nodes();
       d3.select(circles[0]).transition().duration(100).attr('r', r * 1.4).attr('stroke-width', 2);
       d3.select(circles[1]).transition().duration(100).attr('r', r * 0.45 * 1.4).attr('cy', -(r * 1.4 * 0.85));
+      hoveredRating = d.r;
+      renderDistChart(_lastVisData, hoveredRating);
       showTooltip(d);
     })
     .on('mousemove', function(e) { moveTooltip(e); })
@@ -292,6 +294,8 @@ function render() {
       }).nodes();
       d3.select(circles[0]).transition().duration(100).attr('r', r).attr('stroke-width', 0.8);
       d3.select(circles[1]).transition().duration(100).attr('r', r * 0.45).attr('cy', -(r * 0.85));
+      hoveredRating = null;
+      renderDistChart(_lastVisData, null);
       TIP.classList.remove('visible');
     });
 
@@ -310,6 +314,8 @@ function render() {
 
   updateStats(paired, visSet);
   updateScrubLabel();
+  _lastVisData = paired.filter(d => visSet.has(d.id));
+  renderDistChart(_lastVisData, hoveredRating);
 }
 
 // ── TOOLTIP ───────────────────────────────────────────────────────
@@ -435,3 +441,115 @@ loadData().then(rows => {
   scrubIndex = -1;
   requestAnimationFrame(() => requestAnimationFrame(render));
 });
+
+// ── RATING DISTRIBUTION CHART ─────────────────────────────────────
+const RATING_BINS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+let hoveredRating = null; // rating of currently hovered film
+let _lastVisData  = [];   // cached visible films for chart hover re-render
+
+function renderDistChart(visibleData, highlightRating) {
+  const el = document.getElementById('dist-chart');
+  if (!el) return;
+
+  const cW  = el.parentElement.clientWidth - 32;
+  const W   = Math.min(cW, 500);
+  const H   = 72;
+  const padL = 28, padR = 10, padT = 8, padB = 22;
+  const iW  = W - padL - padR;
+  const iH  = H - padT - padB;
+
+  // Count per bin
+  const counts = {};
+  RATING_BINS.forEach(b => counts[b] = 0);
+  visibleData.forEach(d => {
+    const bin = Math.round(d.r * 2) / 2;
+    if (counts[bin] !== undefined) counts[bin]++;
+  });
+  const maxCount = Math.max(...Object.values(counts), 1);
+
+  const xScale = i => padL + (i / (RATING_BINS.length - 1)) * iW;
+  const yScale = v => padT + iH - (v / maxCount) * iH;
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  el.setAttribute('width', W);
+  el.setAttribute('height', H);
+  el.innerHTML = '';
+
+  // Background
+  const bg = document.createElementNS(svgNS, 'rect');
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', '#0d0a07'); bg.setAttribute('rx', 3);
+  el.appendChild(bg);
+
+  // Grid lines
+  [0.25, 0.5, 0.75, 1].forEach(frac => {
+    const y = padT + iH * (1 - frac);
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
+    line.setAttribute('y1', y);    line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#2a1c0c'); line.setAttribute('stroke-width', 0.5);
+    el.appendChild(line);
+  });
+
+  // Bars
+  const barW = (iW / RATING_BINS.length) * 0.55;
+  RATING_BINS.forEach((bin, i) => {
+    const count  = counts[bin];
+    const x      = xScale(i);
+    const barH   = (count / maxCount) * iH;
+    const y      = padT + iH - barH;
+    const isHov  = highlightRating !== null && Math.round(highlightRating * 2) / 2 === bin;
+
+    // Bar fill color: gold-ish scale from dim to bright
+    const t      = bin / 5;
+    const base   = `rgba(${Math.round(80 + t*120)}, ${Math.round(50 + t*100)}, ${Math.round(10 + t*20)}, 0.85)`;
+    const bright = '#f6d477';
+
+    if (count > 0) {
+      const rect = document.createElementNS(svgNS, 'rect');
+      rect.setAttribute('x', x - barW / 2);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', barW);
+      rect.setAttribute('height', barH);
+      rect.setAttribute('fill', isHov ? bright : base);
+      rect.setAttribute('rx', 1.5);
+      if (isHov) {
+        rect.setAttribute('filter', 'drop-shadow(0 0 4px rgba(246,212,119,0.7))');
+      }
+      el.appendChild(rect);
+
+      // Count label above bar (only if highlighted or bar is tall enough)
+      if (isHov || barH > 12) {
+        const txt = document.createElementNS(svgNS, 'text');
+        txt.setAttribute('x', x);
+        txt.setAttribute('y', y - 3);
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('font-family', 'DM Mono, monospace');
+        txt.setAttribute('font-size', 7);
+        txt.setAttribute('fill', isHov ? '#f6d477' : '#7a5a2a');
+        txt.textContent = count;
+        el.appendChild(txt);
+      }
+    }
+
+    // X axis tick label
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', H - 6);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-family', 'DM Mono, monospace');
+    label.setAttribute('font-size', 7);
+    label.setAttribute('fill', isHov ? '#f6d477' : '#5a3a18');
+    label.textContent = bin % 1 === 0 ? bin : (i % 2 === 0 ? bin : '');
+    el.appendChild(label);
+  });
+
+  // Axis line
+  const axis = document.createElementNS(svgNS, 'line');
+  axis.setAttribute('x1', padL); axis.setAttribute('x2', W - padR);
+  axis.setAttribute('y1', padT + iH); axis.setAttribute('y2', padT + iH);
+  axis.setAttribute('stroke', '#3a2810'); axis.setAttribute('stroke-width', 1);
+  el.appendChild(axis);
+}
