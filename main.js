@@ -29,7 +29,7 @@ const ASPECT = 0.72;
 const OSCAR_NOMS = new Set([
   'Frankenstein','One Battle After Another','Zootopia 2','Blue Moon',
   'Marty Supreme','The Smashing Machine','Hamnet','F1','Elio',
-  'Song Sung Blue','Arco'
+  'Song Sung Blue','Arco', 'Sinners'
 ]);
 
 const ROW_DEFS = [
