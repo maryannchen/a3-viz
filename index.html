@@ -318,9 +318,11 @@
 
     @keyframes curtainLeft        { from { transform: translateX(0); } to { transform: translateX(-100%); } }
     @keyframes curtainRight       { from { transform: translateX(0); } to { transform: translateX(100%);  } }
+    @keyframes curtainValance     { from { transform: translateY(0); } to { transform: translateY(-100%); } }
 
     .curtain-panel.left.open  { animation: curtainLeft  0.9s cubic-bezier(0.76,0,0.24,1) 0s forwards; }
     .curtain-panel.right.open { animation: curtainRight 0.9s cubic-bezier(0.76,0,0.24,1) 0s forwards; }
+    .curtain-valance.open     { animation: curtainValance 0.9s cubic-bezier(0.76,0,0.24,1) 0s forwards; }
 
     #curtain.gone { display: none; }
   </style>
@@ -401,6 +403,7 @@
       requestAnimationFrame(() => requestAnimationFrame(() => {
         curtain.querySelector('.left').classList.add('open');
         curtain.querySelector('.right').classList.add('open');
+        curtain.querySelector('.curtain-valance').classList.add('open');
         setTimeout(() => curtain.classList.add('gone'), 1100);
       }));
     });
