@@ -379,13 +379,11 @@ function updateScrubLabel() {
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
   const el = document.getElementById('scrub-label');
   if (scrubIndex === -1 || scrubIndex >= sortedData.length - 1) {
-    el.textContent = 'Most recent';
-  } else if (scrubIndex === 0) {
-    el.textContent = 'Least recent';
+    el.textContent = '';
   } else {
     const d = sortedData[scrubIndex];
     const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'numeric' });
-    el.textContent = `Up to ${mo} · ${scrubIndex + 1} films`;
+    el.textContent = `${mo} · ${scrubIndex + 1} films`;
   }
 }
 
