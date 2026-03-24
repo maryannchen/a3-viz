@@ -11,7 +11,7 @@ async function loadData() {
     y:  +d.year,
   }));
 }
-
+ 
 // ── CONSTANTS ────────────────────────────────────────────────────
 const GENRE_COLORS = {
   'Drama':           '#5B8DB8',
@@ -25,13 +25,13 @@ const CR_COLORS = { 'G':'#6ECFB0','PG':'#E8C14A','PG-13':'#E07060','R':'#C0392B'
 const GENRES = ['Drama','Comedy','Fantasy','Romance','Thriller','Science Fiction'];
 const CRS    = ['G','PG','PG-13','R','NR'];
 const ASPECT = 0.72;
-
+ 
 const OSCAR_NOMS = new Set([
   'Frankenstein','One Battle After Another','Zootopia 2','Blue Moon',
   'Marty Supreme','The Smashing Machine','Hamnet','F1','Elio',
   'Song Sung Blue','Arco', 'Sinners'
 ]);
-
+ 
 const ROW_DEFS = [
   { seats:5,  yFrac:0.30 },
   { seats:6,  yFrac:0.40 },
@@ -41,7 +41,7 @@ const ROW_DEFS = [
   { seats:10, yFrac:0.78 },
   { seats:9,  yFrac:0.88 },
 ];
-
+ 
 // ── GENRE GLOW ────────────────────────────────────────────────────
 const GENRE_GLOW = {
   'all':             '#b8d0ff',
@@ -52,7 +52,7 @@ const GENRE_GLOW = {
   'Thriller':        '#E05C3A',
   'Science Fiction': '#4DD9AC',
 };
-
+ 
 // ── STATE ─────────────────────────────────────────────────────────
 let DATA          = [];
 let colorMode     = 'genre';
@@ -60,12 +60,12 @@ let sizeMode      = 'myRating';
 let filterGenre   = 'all';
 let scrubIndex    = -1;
 let W, H;
-
+ 
 // ── DOM REFS ─────────────────────────────────────────────────────
 const svg  = d3.select('#theatre');
 const wrap = document.getElementById('theatre-wrap');
 const TIP  = document.getElementById('tooltip');
-
+ 
 // ── LAYOUT ───────────────────────────────────────────────────────
 function buildSeats(W, H) {
   const seats = [];
@@ -83,7 +83,7 @@ function buildSeats(W, H) {
   });
   return seats;
 }
-
+ 
 // ── SCALES ───────────────────────────────────────────────────────
 function getColor(d, mode) {
   if (mode === 'genre')         return GENRE_COLORS[d.g] || '#aaa';
@@ -92,65 +92,65 @@ function getColor(d, mode) {
   if (mode === 'contentRating') return CR_COLORS[d.cr] || '#aaa';
   return '#aaa';
 }
-
+ 
 function getSize(d, mode, base) {
   if (mode === 'myRating')  return base * (0.3 + (d.r / 5) * 1.4);
   if (mode === 'avgRating') return base * (0.3 + (d.ar / 5) * 1.4);
   if (mode === 'year')      return base * (0.5 + Math.min((2026 - d.y) / 65, 1) * 1.1);
   return base;
 }
-
+ 
 // ── DIMS ─────────────────────────────────────────────────────────
 function updateDims() {
   const r = wrap.getBoundingClientRect();
   W = Math.max(r.width - 32, 300);
   H = W * ASPECT;
 }
-
-
+ 
+ 
 function isOscarNom(d) { return OSCAR_NOMS.has(d.t); }
-
+ 
 // ── RENDER ───────────────────────────────────────────────────────
 function render() {
   updateDims();
   if (!W || !H || !DATA.length) return;
-
+ 
   svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
-
+ 
   const base  = Math.max(W / 72, 5.5);
   const seats = buildSeats(W, H);
-
+ 
   // Defs
   svg.selectAll('defs').remove();
   const defs = svg.append('defs');
-
+ 
   const filt = defs.append('filter').attr('id','grain').attr('x','0%').attr('y','0%').attr('width','100%').attr('height','100%');
   filt.append('feTurbulence').attr('type','fractalNoise').attr('baseFrequency','0.65').attr('numOctaves','3').attr('stitchTiles','stitch').attr('result','noise');
   filt.append('feColorMatrix').attr('type','saturate').attr('values','0').attr('result','grayNoise');
   filt.append('feBlend').attr('in','SourceGraphic').attr('in2','grayNoise').attr('mode','multiply').attr('result','blend');
   filt.append('feComponentTransfer').attr('in','blend').append('feFuncA').attr('type','linear').attr('slope','1');
-
+ 
   const glowColor = GENRE_GLOW[filterGenre] || '#b8d0ff';
   const g1 = defs.append('radialGradient').attr('id','sg').attr('cx','50%').attr('cy','50%').attr('r','50%');
   g1.append('stop').attr('offset','0%').attr('stop-color', glowColor).attr('stop-opacity',0.28);
   g1.append('stop').attr('offset','100%').attr('stop-color','#000').attr('stop-opacity',0);
-
+ 
   const g2 = defs.append('linearGradient').attr('id','scr').attr('x1','0%').attr('y1','0%').attr('x2','0%').attr('y2','100%');
   g2.append('stop').attr('offset','0%').attr('stop-color','#dde8ff');
   g2.append('stop').attr('offset','100%').attr('stop-color','#a8bce0');
-
+ 
   const g3 = defs.append('linearGradient').attr('id','cL').attr('x1','0%').attr('x2','100%');
   g3.append('stop').attr('offset','0%').attr('stop-color','#5a0a0a');
   g3.append('stop').attr('offset','100%').attr('stop-color','transparent');
-
+ 
   const g4 = defs.append('linearGradient').attr('id','cR').attr('x1','100%').attr('x2','0%');
   g4.append('stop').attr('offset','0%').attr('stop-color','#5a0a0a');
   g4.append('stop').attr('offset','100%').attr('stop-color','transparent');
-
+ 
   const g5 = defs.append('linearGradient').attr('id','fl').attr('x1','0%').attr('y1','0%').attr('x2','0%').attr('y2','100%');
   g5.append('stop').attr('offset','0%').attr('stop-color','#1a0f06').attr('stop-opacity',0);
   g5.append('stop').attr('offset','100%').attr('stop-color','#1a0f06').attr('stop-opacity',0.5);
-
+ 
   // Theatre background
   svg.selectAll('.bg-all').remove();
   const bg = svg.append('g').attr('class','bg-all');
@@ -159,7 +159,7 @@ function render() {
   bg.append('ellipse').attr('class','screen-wash')
     .attr('cx',W/2).attr('cy',H*0.04).attr('rx',W*0.52).attr('ry',H*0.34)
     .attr('fill','url(#sg)');
-
+ 
   const sw=W*0.68, sh=H*0.07, sx=(W-sw)/2, sy=H*0.04;
   bg.append('rect').attr('x',sx).attr('y',sy).attr('width',sw).attr('height',sh)
     .attr('fill','url(#scr)').attr('rx',2).attr('stroke','#c8d8ff').attr('stroke-width',1);
@@ -176,7 +176,7 @@ function render() {
   bg.append('rect').attr('x',0).attr('y',0).attr('width',W*0.12).attr('height',H).attr('fill','url(#cL)').attr('opacity',0.7);
   bg.append('rect').attr('x',W*0.88).attr('y',0).attr('width',W*0.12).attr('height',H).attr('fill','url(#cR)').attr('opacity',0.7);
   bg.append('rect').attr('x',0).attr('y',H*0.2).attr('width',W).attr('height',H*0.8).attr('fill','url(#fl)');
-
+ 
   // Seat shells
   svg.selectAll('.s-shell').remove();
   const seatW=base*1.7, seatH=base*1.1, seatBack=base*0.55;
@@ -187,7 +187,7 @@ function render() {
     g.append('rect').attr('x',-seatW/2).attr('y',-seatH/2).attr('width',seatW).attr('height',seatH)
       .attr('rx',3).attr('fill','#4a2a14').attr('stroke','#7a4a28').attr('stroke-width',0.8);
   });
-
+ 
   // Determine visibility
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
   const showUpTo   = scrubIndex === -1 ? sortedData.length - 1 : scrubIndex;
@@ -195,11 +195,11 @@ function render() {
   const paired = DATA.map((d, i) => ({ ...d, seat:seats[i], id:i }));
   const genreSet = new Set(paired.filter(d => filterGenre === 'all' || d.g === filterGenre).map(d => d.id));
   const visSet   = new Set(paired.filter(d => visibleTitles.has(d.t) && genreSet.has(d.id)).map(d => d.id));
-
+ 
   const spotlightId = null;
-
-
-
+ 
+ 
+ 
   // Theatregoers
   svg.selectAll('.tg').remove();
   const pg = svg.selectAll('.tg')
@@ -207,7 +207,7 @@ function render() {
     .append('g').attr('class','tg')
     .attr('transform', d => `translate(${d.seat.x},${d.seat.y})`)
     .style('cursor','pointer');
-
+ 
   // Determine opacity
   function bodyOpacity(d) {
     if (!visSet.has(d.id)) return 0;
@@ -219,8 +219,8 @@ function render() {
     if (spotlightId !== null) return spotlightId === d.id ? 0.75 : 0.05;
     return 0.75;
   }
-
-
+ 
+ 
   // Halos for perfect scores (gold pulse) and disasters (red pulse)
   pg.each(function(d) {
     if (!visSet.has(d.id)) return;
@@ -237,7 +237,7 @@ function render() {
       .attr('opacity', opacity)
       .attr('pointer-events', 'none');
   });
-
+ 
   pg.append('circle')
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) : 0)
     .attr('fill', d => getColor(d, colorMode))
@@ -246,13 +246,13 @@ function render() {
     .attr('opacity', d => bodyOpacity(d))
     .transition().duration(400).ease(d3.easeCubicOut)
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) : 0);
-
+ 
   pg.append('circle')
     .attr('cx', 0).attr('cy', d => -(getSize(d, sizeMode, base) * 0.85))
     .attr('r', d => visSet.has(d.id) ? getSize(d, sizeMode, base) * 0.45 : 0)
     .attr('fill', d => { const c = d3.color(getColor(d, colorMode)); return c ? c.darker(0.5).toString() : getColor(d, colorMode); })
     .attr('opacity', d => headOpacity(d));
-
+ 
   // Oscar nomination symbol
   pg.each(function(d) {
     if (!visSet.has(d.id)) return;
@@ -271,8 +271,8 @@ function render() {
       .attr('pointer-events', 'none')
       .text('✦');
   });
-
-
+ 
+ 
   // Tooltip events
   pg.on('mouseover', function(event, d) {
       if (!visSet.has(d.id)) return;
@@ -298,7 +298,7 @@ function render() {
       renderDistChart(_lastVisData, null);
       TIP.classList.remove('visible');
     });
-
+ 
   // Row labels
   svg.selectAll('.rl').remove();
   ROW_DEFS.forEach((_, ri) => {
@@ -311,13 +311,13 @@ function render() {
       .attr('fill','#5a3a18').attr('opacity',0.85)
       .text(String.fromCharCode(65 + ri));
   });
-
+ 
   updateStats(paired, visSet);
   updateScrubLabel();
   _lastVisData = paired.filter(d => visSet.has(d.id));
   renderDistChart(_lastVisData, hoveredRating);
 }
-
+ 
 // ── TOOLTIP ───────────────────────────────────────────────────────
 function getAnnotation(d) {
   if (d.r === 5)  return '♛';
@@ -326,7 +326,7 @@ function getAnnotation(d) {
   if (gap >= 1.5) return '↓';
   return '';
 }
-
+ 
 function showTooltip(d) {
   const ms = '★'.repeat(Math.round(d.r)) + '☆'.repeat(5 - Math.round(d.r));
   const as = '★'.repeat(Math.round(d.ar)) + '☆'.repeat(5 - Math.round(d.ar));
@@ -348,7 +348,7 @@ function moveTooltip(e) {
   TIP.style.left = Math.min(e.clientX + 14, window.innerWidth - 265) + 'px';
   TIP.style.top  = Math.min(e.clientY - 10, window.innerHeight - 210) + 'px';
 }
-
+ 
 // ── STATS ─────────────────────────────────────────────────────────
 function updateStats(paired, visSet) {
   const vis = paired.filter(d => visSet.has(d.id));
@@ -359,7 +359,7 @@ function updateStats(paired, visSet) {
   const top = [...gc.entries()].sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('s-genre').textContent = top ? top[0] : '—';
 }
-
+ 
 // ── SCRUB ─────────────────────────────────────────────────────────
 function updateScrubLabel() {
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
@@ -374,8 +374,8 @@ function updateScrubLabel() {
     el.textContent = `Up to ${mo} · ${scrubIndex + 1} films`;
   }
 }
-
-
+ 
+ 
 // ── LEGEND ────────────────────────────────────────────────────────
 function buildLegend(mode) {
   const el = document.getElementById('legend');
@@ -397,11 +397,11 @@ function buildLegend(mode) {
     ];
   else if (mode === 'contentRating')
     items = CRS.map(r => ({ label:r, color:CR_COLORS[r] }));
-
+ 
   const annItems = [
     { label:'2026 Oscars nominated', sym:'✦', color:'#e8d8ff' },
   ];
-
+ 
   items.forEach(item => {
     const div = document.createElement('div');
     div.className = 'legend-item';
@@ -418,7 +418,7 @@ function buildLegend(mode) {
     el.appendChild(div);
   });
 }
-
+ 
 // ── CONTROLS ─────────────────────────────────────────────────────
 document.getElementById('colorMode').addEventListener('change', function() { colorMode = this.value; buildLegend(colorMode); render(); });
 document.getElementById('sizeMode').addEventListener('change',  function() { sizeMode  = this.value; render(); });
@@ -431,7 +431,7 @@ document.getElementById('scrubber').addEventListener('input', function() {
   render();
 });
 window.addEventListener('resize', render);
-
+ 
 // ── INIT ─────────────────────────────────────────────────────────
 buildLegend('genre');
 loadData().then(rows => {
@@ -440,28 +440,28 @@ loadData().then(rows => {
   const scrubber = document.getElementById('scrubber');
   scrubber.max   = DATA.length - 1;
   scrubber.value = DATA.length - 1;
-  scrubber.style.setProperty('--pct', '0%');  // value=max → thumb at top → 0% fill from top
+  scrubber.style.setProperty('--pct', '100%');  // value=max → thumb at bottom → 100% fill from bottom
   scrubIndex = -1;
   requestAnimationFrame(() => requestAnimationFrame(render));
 });
-
+ 
 // ── RATING DISTRIBUTION CHART ─────────────────────────────────────
 const RATING_BINS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
-
+ 
 let hoveredRating = null; // rating of currently hovered film
 let _lastVisData  = [];   // cached visible films for chart hover re-render
-
+ 
 function renderDistChart(visibleData, highlightRating) {
   const el = document.getElementById('dist-chart');
   if (!el) return;
-
+ 
   const cW  = el.parentElement.clientWidth || 150;
   const W   = Math.max(cW, 80);
   const H   = 72;
   const padL = 28, padR = 10, padT = 8, padB = 22;
   const iW  = W - padL - padR;
   const iH  = H - padT - padB;
-
+ 
   // Count per bin
   const counts = {};
   RATING_BINS.forEach(b => counts[b] = 0);
@@ -470,22 +470,22 @@ function renderDistChart(visibleData, highlightRating) {
     if (counts[bin] !== undefined) counts[bin]++;
   });
   const maxCount = Math.max(...Object.values(counts), 1);
-
+ 
   const xScale = i => padL + (i / (RATING_BINS.length - 1)) * iW;
   const yScale = v => padT + iH - (v / maxCount) * iH;
-
+ 
   const svgNS = 'http://www.w3.org/2000/svg';
   el.setAttribute('viewBox', `0 0 ${W} ${H}`);
   el.setAttribute('width', W);
   el.setAttribute('height', H);
   el.innerHTML = '';
-
+ 
   // Background
   const bg = document.createElementNS(svgNS, 'rect');
   bg.setAttribute('width', W); bg.setAttribute('height', H);
   bg.setAttribute('fill', '#0d0a07'); bg.setAttribute('rx', 3);
   el.appendChild(bg);
-
+ 
   // Grid lines
   [0.25, 0.5, 0.75, 1].forEach(frac => {
     const y = padT + iH * (1 - frac);
@@ -495,7 +495,7 @@ function renderDistChart(visibleData, highlightRating) {
     line.setAttribute('stroke', '#2a1c0c'); line.setAttribute('stroke-width', 0.5);
     el.appendChild(line);
   });
-
+ 
   // Bars
   const barW = (iW / RATING_BINS.length) * 0.55;
   RATING_BINS.forEach((bin, i) => {
@@ -504,12 +504,12 @@ function renderDistChart(visibleData, highlightRating) {
     const barH   = (count / maxCount) * iH;
     const y      = padT + iH - barH;
     const isHov  = highlightRating !== null && Math.round(highlightRating * 2) / 2 === bin;
-
+ 
     // Bar fill color: gold-ish scale from dim to bright
     const t      = bin / 5;
     const base   = `rgba(${Math.round(80 + t*120)}, ${Math.round(50 + t*100)}, ${Math.round(10 + t*20)}, 0.85)`;
     const bright = '#f6d477';
-
+ 
     if (count > 0) {
       const rect = document.createElementNS(svgNS, 'rect');
       rect.setAttribute('x', x - barW / 2);
@@ -522,7 +522,7 @@ function renderDistChart(visibleData, highlightRating) {
         rect.setAttribute('filter', 'drop-shadow(0 0 4px rgba(246,212,119,0.7))');
       }
       el.appendChild(rect);
-
+ 
       // Count label above bar (only if highlighted or bar is tall enough)
       if (isHov || barH > 12) {
         const txt = document.createElementNS(svgNS, 'text');
@@ -536,7 +536,7 @@ function renderDistChart(visibleData, highlightRating) {
         el.appendChild(txt);
       }
     }
-
+ 
     // X axis tick label
     const label = document.createElementNS(svgNS, 'text');
     label.setAttribute('x', x);
@@ -548,7 +548,7 @@ function renderDistChart(visibleData, highlightRating) {
     label.textContent = bin % 1 === 0 ? bin : (i % 2 === 0 ? bin : '');
     el.appendChild(label);
   });
-
+ 
   // Axis line
   const axis = document.createElementNS(svgNS, 'line');
   axis.setAttribute('x1', padL); axis.setAttribute('x2', W - padR);
@@ -556,3 +556,4 @@ function renderDistChart(visibleData, highlightRating) {
   axis.setAttribute('stroke', '#3a2810'); axis.setAttribute('stroke-width', 1);
   el.appendChild(axis);
 }
+ 
