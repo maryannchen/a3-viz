@@ -61,6 +61,20 @@ let filterGenre   = 'all';
 let scrubIndex    = -1;
 let W, H;
 
+
+// ── SCRUB VISUAL ─────────────────────────────────────────────────
+function updateScrubVisual(input) {
+  const pct = input.value / input.max;          // 0=bottom(oldest) → 1=top... wait
+  // value=max → all films → thumb at BOTTOM, fill=100% from bottom
+  // value=0   → fewest → thumb at TOP, fill=0%
+  // pct = value/max: 1 at max(bottom), 0 at min(top)
+  const fillPct = pct * 100;
+  const fill  = document.getElementById('scrub-fill');
+  const thumb = document.getElementById('scrub-thumb');
+  if (fill)  fill.style.height  = fillPct + '%';
+  if (thumb) thumb.style.bottom = fillPct + '%';
+}
+
 // ── DOM REFS ─────────────────────────────────────────────────────
 const svg  = d3.select('#theatre');
 const wrap = document.getElementById('theatre-wrap');
@@ -440,7 +454,7 @@ loadData().then(rows => {
   const scrubber = document.getElementById('scrubber');
   scrubber.max   = DATA.length - 1;
   scrubber.value = DATA.length - 1;
-  scrubber.style.setProperty('--pct', '0%');  // value=max → thumb at bottom → 0% = all gold
+  updateScrubVisual(scrubber);
   scrubIndex = -1;
   requestAnimationFrame(() => requestAnimationFrame(render));
 });
@@ -556,4 +570,3 @@ function renderDistChart(visibleData, highlightRating) {
   axis.setAttribute('stroke', '#3a2810'); axis.setAttribute('stroke-width', 1);
   el.appendChild(axis);
 }
- 

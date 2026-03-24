@@ -114,35 +114,60 @@
       line-height: 1.5;
       min-height: 2.4em;
     }
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      writing-mode: vertical-lr;
-      direction: rtl;
-      transform: rotate(180deg);
-      width: 3px;
-      height: 100%;
+    /* Custom vertical scrubber */
+    .scrub-track-wrap {
+      position: relative;
+      width: 14px;
+      flex: 1;
       min-height: 160px;
       max-height: 340px;
-      background: linear-gradient(180deg, var(--gold) var(--pct, 100%), #2a1a08 var(--pct, 100%));
-      border-radius: 2px;
-      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      flex-shrink: 0;
     }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
+    .scrub-track {
+      position: absolute;
+      left: 50%; top: 0; bottom: 0;
+      transform: translateX(-50%);
+      width: 3px;
+      border-radius: 2px;
+      background: #2a1a08;
+      pointer-events: none;
+    }
+    .scrub-fill {
+      position: absolute;
+      left: 0; bottom: 0;
+      width: 100%;
+      border-radius: 2px;
+      background: var(--gold);
+      transition: height 0.05s linear;
+      pointer-events: none;
+    }
+    .scrub-thumb {
+      position: absolute;
+      left: 50%;
+      transform: translate(-50%, 50%);
       width: 14px; height: 14px;
       border-radius: 50%;
       background: var(--gold);
       border: 2px solid #100C08;
       box-shadow: 0 0 6px rgba(201,168,76,0.5);
+      pointer-events: none;
+      bottom: 0;
     }
-    input[type=range]::-moz-range-thumb {
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--gold);
-      border: 2px solid #100C08;
+    input[type=range] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      margin: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      writing-mode: vertical-lr;
+      direction: rtl;
     }
 
     /* ── Legend ── */
@@ -393,7 +418,7 @@
 
   <header>
     <div class="title">M Y &nbsp; C I N E M A</div>
-    <div class="subtitle">movies i watched &nbsp;·&nbsp; each seat, an experience</div>
+    <div class="subtitle">movies i watched</div>
   </header>
 
   <div class="controls">
@@ -437,8 +462,14 @@
     <!-- Left panel: vertical timeline scrubber -->
     <div id="left-panel">
       <span class="panel-heading">Timeline</span>
-      <input type="range" id="scrubber" min="0" max="55" value="55" style="--pct:0%"
-        oninput="this.style.setProperty('--pct', ((1-this.value/this.max)*100)+'%')">
+      <div class="scrub-track-wrap" id="scrub-track-wrap">
+        <div class="scrub-track">
+          <div class="scrub-fill" id="scrub-fill" style="height:100%"></div>
+        </div>
+        <div class="scrub-thumb" id="scrub-thumb" style="bottom:0%"></div>
+        <input type="range" id="scrubber" min="0" max="55" value="55"
+          oninput="updateScrubVisual(this)">
+      </div>
       <span id="scrub-label">Most recent</span>
     </div>
 
