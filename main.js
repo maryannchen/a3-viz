@@ -469,8 +469,8 @@ function renderDistChart(visibleData, highlightRating) {
 
   const cW  = el.parentElement.clientWidth || 150;
   const W   = Math.max(cW, 80);
-  const H   = 72;
-  const padL = 28, padR = 10, padT = 8, padB = 22;
+  const H   = 82;
+  const padL = 28, padR = 10, padT = 8, padB = 26;
   const iW  = W - padL - padR;
   const iH  = H - padT - padB;
 
@@ -549,16 +549,26 @@ function renderDistChart(visibleData, highlightRating) {
       }
     }
 
-    // X axis tick label
-    const label = document.createElementNS(svgNS, 'text');
-    label.setAttribute('x', x);
-    label.setAttribute('y', H - 6);
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('font-family', 'DM Mono, monospace');
-    label.setAttribute('font-size', 9);
-    label.setAttribute('fill', isHov ? '#f6d477' : '#5a3a18');
-    label.textContent = bin % 1 === 0 ? bin : (i % 2 === 0 ? bin : '');
-    el.appendChild(label);
+    // X axis: whole numbers get a text label, half-stars get a small tick only
+    if (bin % 1 === 0) {
+      const label = document.createElementNS(svgNS, 'text');
+      label.setAttribute('x', x);
+      label.setAttribute('y', H - 5);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('font-family', 'DM Mono, monospace');
+      label.setAttribute('font-size', 9);
+      label.setAttribute('fill', isHov ? '#f6d477' : '#7a5030');
+      label.textContent = '★' + bin;
+      el.appendChild(label);
+    } else {
+      // Small tick only for half-star positions
+      const tick = document.createElementNS(svgNS, 'line');
+      tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+      tick.setAttribute('y1', padT + iH); tick.setAttribute('y2', padT + iH + 3);
+      tick.setAttribute('stroke', isHov ? '#f6d477' : '#3a2010');
+      tick.setAttribute('stroke-width', 1);
+      el.appendChild(tick);
+    }
   });
 
   // Axis line
