@@ -353,8 +353,8 @@ function moveTooltip(e) {
 function updateStats(paired, visSet) {
   const vis = paired.filter(d => visSet.has(d.id));
   document.getElementById('s-count').textContent     = vis.length;
-  document.getElementById('s-myrating').textContent  = vis.length ? (vis.reduce((s,d)=>s+d.r,0)/vis.length).toFixed(1) : '—';
-  document.getElementById('s-avgrating').textContent = vis.length ? (vis.reduce((s,d)=>s+d.ar,0)/vis.length).toFixed(1) : '—';
+  document.getElementById('s-myrating').textContent  = vis.length ? (vis.reduce((s,d)=>s+d.r,0)/vis.length).toFixed(1) + ' / 5' : '— / 5';
+  document.getElementById('s-avgrating').textContent = vis.length ? (vis.reduce((s,d)=>s+d.ar,0)/vis.length).toFixed(1) + ' / 5' : '— / 5';
   const gc  = d3.rollup(vis, v=>v.length, d=>d.g);
   const top = [...gc.entries()].sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('s-genre').textContent = top ? top[0] : '—';
@@ -365,11 +365,13 @@ function updateScrubLabel() {
   const sortedData = [...DATA].sort((a,b) => new Date(a.d) - new Date(b.d));
   const el = document.getElementById('scrub-label');
   if (scrubIndex === -1 || scrubIndex >= sortedData.length - 1) {
-    el.textContent = 'All films';
+    el.textContent = 'Most recent';
+  } else if (scrubIndex === 0) {
+    el.textContent = 'Least recent';
   } else {
     const d = sortedData[scrubIndex];
     const mo = new Date(d.d).toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'numeric' });
-    el.textContent = `Up to ${mo} · ${scrubIndex + 1} film${scrubIndex > 0 ? 's' : ''}`;
+    el.textContent = `Up to ${mo} · ${scrubIndex + 1} films`;
   }
 }
 
@@ -438,6 +440,7 @@ loadData().then(rows => {
   const scrubber = document.getElementById('scrubber');
   scrubber.max   = DATA.length - 1;
   scrubber.value = DATA.length - 1;
+  scrubber.style.setProperty('--pct', '0%');  // value=max → thumb at top → 0% fill from top
   scrubIndex = -1;
   requestAnimationFrame(() => requestAnimationFrame(render));
 });
@@ -452,8 +455,8 @@ function renderDistChart(visibleData, highlightRating) {
   const el = document.getElementById('dist-chart');
   if (!el) return;
 
-  const cW  = el.parentElement.clientWidth - 32;
-  const W   = Math.min(cW, 500);
+  const cW  = el.parentElement.clientWidth || 150;
+  const W   = Math.max(cW, 80);
   const H   = 72;
   const padL = 28, padR = 10, padT = 8, padB = 22;
   const iW  = W - padL - padR;

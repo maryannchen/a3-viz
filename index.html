@@ -100,15 +100,7 @@
     button:hover { border-color: var(--gold); background: #251808; }
     button.active { border-color: var(--gold); background: #2e1f06; color: var(--gold); }
 
-    /* ── Scrubber ── */
-    .scrub-wrap {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      justify-content: center;
-      padding: 0.7rem 1rem 0;
-      flex-wrap: wrap;
-    }
+    /* ── Scrubber (vertical, side panel) ── */
     .scrub-label-text {
       font-size: 0.6rem;
       letter-spacing: 0.18em;
@@ -116,19 +108,26 @@
       color: var(--gold-dim);
     }
     #scrub-label {
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       color: #9a8060;
-      min-width: 180px;
+      text-align: center;
+      line-height: 1.5;
+      min-height: 2.4em;
     }
     input[type=range] {
       -webkit-appearance: none;
       appearance: none;
-      width: 260px;
-      height: 3px;
-      background: linear-gradient(90deg, var(--gold) var(--pct, 100%), #2a1a08 var(--pct, 100%));
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 3px;
+      height: 100%;
+      min-height: 160px;
+      max-height: 340px;
+      background: linear-gradient(180deg, var(--gold) var(--pct, 0%), #2a1a08 var(--pct, 0%));
       border-radius: 2px;
       outline: none;
       cursor: pointer;
+      flex-shrink: 0;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -166,13 +165,43 @@
     .legend-sym  { font-size: 0.75rem; line-height: 1; width: 14px; text-align: center; flex-shrink: 0; }
     .legend-sep  { width: 1px; height: 14px; background: #3a2810; margin: 0 0.2rem; }
 
+    /* ── Main layout grid ── */
+    #main-layout {
+      display: grid;
+      grid-template-columns: 120px 1fr 160px;
+      gap: 0 1rem;
+      max-width: 1180px;
+      margin: 0.8rem auto 0;
+      padding: 0 1rem;
+      align-items: start;
+    }
+
+    /* Left panel: scrubber */
+    #left-panel {
+      position: sticky;
+      top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      padding-top: 0.4rem;
+    }
+
+    /* Right panel: stats + chart */
+    #right-panel {
+      position: sticky;
+      top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      padding-top: 0.4rem;
+    }
+
     /* ── Theatre ── */
     #theatre-wrap {
       position: relative;
       width: 100%;
-      max-width: 980px;
-      margin: 0.8rem auto 0;
-      padding: 0 1rem;
+      min-width: 0;
     }
     svg#theatre {
       width: 100%;
@@ -220,39 +249,42 @@
     
 
 
-    /* ── Rating distribution chart ── */
-    #dist-wrap {
-      max-width: 980px;
-      margin: 0 auto 1.8rem;
-      padding: 0 1rem;
-    }
+    /* ── Rating distribution chart (right panel) ── */
+    #dist-wrap { width: 100%; }
     .dist-heading {
-      font-size: 0.52rem;
+      font-size: 0.5rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--gold-dim);
-      margin-bottom: 0.5rem;
-      text-align: center;
+      margin-bottom: 0.4rem;
+      opacity: 0.7;
     }
     #dist-chart {
       display: block;
       width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
       overflow: visible;
     }
-    /* ── Stats ── */
+    /* ── Stats (right panel) ── */
     #stats {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem 2rem;
-      justify-content: center;
-      padding: 0.8rem 1rem 1.5rem;
-      font-size: 0.62rem;
-      letter-spacing: 0.12em;
+      flex-direction: column;
+      gap: 0.45rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
       color: var(--gold-dim);
     }
-    #stats span { color: var(--gold); }
+    #stats span { color: var(--gold); display: block; font-size: 0.72rem; margin-top: 0.05rem; }
+    .stat-row { display: flex; flex-direction: column; }
+
+    /* ── Panel headings ── */
+    .panel-heading {
+      font-size: 0.5rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 0.1rem;
+      opacity: 0.7;
+    }
 
 
 
@@ -360,7 +392,7 @@
 
   <header>
     <div class="title">M Y &nbsp; C I N E M A</div>
-    <div class="subtitle">movies i watched</div>
+    <div class="subtitle">movies i watched &nbsp;·&nbsp; each seat, an experience</div>
   </header>
 
   <div class="controls">
@@ -397,29 +429,35 @@
 
   </div>
 
-  <!-- Timeline scrubber -->
-  <div class="scrub-wrap">
-    <span class="scrub-label-text">Timeline</span>
-    <input type="range" id="scrubber" min="0" max="55" value="55"
-      oninput="this.style.setProperty('--pct', (this.value/this.max*100)+'%')">
-    <span id="scrub-label">All films</span>
-  </div>
-
   <div class="legend" id="legend"></div>
-  <div id="theatre-wrap"><svg id="theatre"></svg></div>
 
-  <div id="stats">
-    FILMS <span id="s-count">—</span> &nbsp;|&nbsp;
-    MY AVG <span id="s-myrating">—</span> / 5 &nbsp;|&nbsp;
-    CROWD AVG <span id="s-avgrating">—</span> / 5 &nbsp;|&nbsp;
-    TOP GENRE <span id="s-genre">—</span>
-  </div>
+  <div id="main-layout">
 
+    <!-- Left panel: vertical timeline scrubber -->
+    <div id="left-panel">
+      <span class="panel-heading">Timeline</span>
+      <input type="range" id="scrubber" min="0" max="55" value="55" style="--pct:0%"
+        oninput="this.style.setProperty('--pct', ((1 - this.value/this.max)*100)+'%')">
+      <span id="scrub-label">Most recent</span>
+    </div>
 
-  <!-- Rating distribution chart -->
-  <div id="dist-wrap">
-    <div class="dist-heading">My Rating Distribution</div>
-    <svg id="dist-chart"></svg>
+    <!-- Centre: theatre -->
+    <div id="theatre-wrap"><svg id="theatre"></svg></div>
+
+    <!-- Right panel: stats + distribution chart -->
+    <div id="right-panel">
+      <div id="stats">
+        <div class="stat-row">FILMS<span id="s-count">—</span></div>
+        <div class="stat-row">MY AVG<span id="s-myrating">— / 5</span></div>
+        <div class="stat-row">CROWD AVG<span id="s-avgrating">— / 5</span></div>
+        <div class="stat-row">TOP GENRE<span id="s-genre">—</span></div>
+      </div>
+      <div id="dist-wrap">
+        <div class="dist-heading">Rating Distribution</div>
+        <svg id="dist-chart"></svg>
+      </div>
+    </div>
+
   </div>
 
   <div id="tooltip"></div>
